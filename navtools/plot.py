@@ -110,7 +110,6 @@ def geoplot(
         color=source,
         hover_data=hover_data,
         labels=labels,
-        zoom=3,
         color_discrete_sequence=color_sequence,
         template="seaborn",
     )
