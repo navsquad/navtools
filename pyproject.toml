@@ -12,6 +12,9 @@ pandas = "^2.0.1"
 matplotlib = "^3.7.1"
 seaborn = "^0.12.2"
 plotly = "^5.14.1"
+numba = "^0.57.0"
+tqdm = "^4.65.0"
+bagpy = "^0.5"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

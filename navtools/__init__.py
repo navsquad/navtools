@@ -1,2 +1,1 @@
-from .dsp import *
-from .plot import *
+from . import io, dsp, plot
