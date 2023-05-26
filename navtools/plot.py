@@ -9,6 +9,8 @@ import planar
 
 def correlation(
     correlation: np.array,
+    x: np.array = np.empty(0),
+    xlabel: str = "Sample Lags",
     title: str = "Parallel Correlation",
     context: str = "talk",
     label=None,
@@ -19,6 +21,10 @@ def correlation(
     ----------
     correlation : np.array
         Correlation values across sample lags
+    x : np.array, optional
+        x values (eg. fractional chips), by default np.empty(0)
+    xlabel : str, optional
+        x axis label, by default "Sample Lags"
     title : str, optional
         Title of plot, by default "Parallel Correlation"
     context : str, optional
@@ -31,13 +37,17 @@ def correlation(
     plt.axes
         Plot axes
     """
+
+    if x.size == 0:
+        x = np.arange(0, correlation.size)
+
     sns.set_context(context)
 
     _, ax = plt.subplots()
-    ax.plot(correlation, label=label)
+    ax.plot(x, correlation, label=label)
 
     plt.title(title)
-    plt.xlabel("Sample Lags")
+    plt.xlabel(xlabel)
     plt.ylabel("Correlation Magnitude")
 
     return ax
