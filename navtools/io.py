@@ -4,9 +4,56 @@ import numpy as np
 import pandas as pd
 import pathlib as plib
 from numbers import Number
-from typing import Tuple
+from typing import Tuple, Union
 from bagpy import bagreader
 from tqdm import tqdm
+
+
+class SignalFile:
+    def __init__(self, file_path: str, dtype: str, is_complex: bool):
+        self.fid = open(file_path, "rb+")
+        self.dtype = np.dtype(dtype)
+        self.offset = 0
+        self.byte_depth = self.dtype.itemsize
+
+        MIN_NUMPY_COMPLEX_BYTE_DEPTH = 8
+        if is_complex and self.byte_depth < MIN_NUMPY_COMPLEX_BYTE_DEPTH:
+            self.is_complex_with_invalid_dtype = True
+            self.sample_multiplier = 2
+        else:
+            self.is_complex_with_invalid_dtype = False
+            self.sample_multiplier = 1
+
+    def __del__(self):
+        self.fid.close()
+
+    def fseek(self, sample_offset: int):
+        bytes_per_sample = self.byte_depth * self.sample_multiplier
+        byte_offset = sample_offset * bytes_per_sample
+        self.offset = byte_offset
+
+    def fread(self, num_samples: int):
+        num_samples = num_samples * self.sample_multiplier
+        samples = np.fromfile(
+            file=self.fid,
+            dtype=self.dtype,
+            count=num_samples,
+            offset=self.offset,
+        )
+
+        if self.is_complex_with_invalid_dtype:
+            samples = samples.astype(np.float32).view(np.complex64)
+
+        return samples
+
+    def get_fid(self):
+        return self.fid
+
+
+def fread(
+    fid, dtype: str, is_complex: bool, num_samples: int = -1, offset_samples: int = 0
+):
+    print()
 
 
 def compute_byte_properties(
