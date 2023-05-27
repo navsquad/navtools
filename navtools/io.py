@@ -40,6 +40,7 @@ class SignalFile:
             count=num_samples,
             offset=self.offset,
         )
+        self.offset = 0  # prevents unwanted sample skipping
 
         if self.is_complex_with_invalid_dtype:
             samples = samples.astype(np.float32).view(np.complex64)
