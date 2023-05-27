@@ -21,6 +21,7 @@ planar = {git = "https://github.com/srush/planar"}
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
 mpld3 = "^0.5.9"
+ipykernel = "^6.23.1"
 
 [build-system]
 requires = ["poetry-core"]
