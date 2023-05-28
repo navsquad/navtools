@@ -93,18 +93,6 @@ class SignalFile:
         return self.fid
 
 
-def compute_byte_properties(
-    file_data_type: str, fsamp: Number
-) -> Tuple[Number, Number]:
-    bit_depth_str = re.findall(r"\d+", file_data_type)
-    bit_depth = list(map(int, bit_depth_str))
-
-    byte_depth = int(bit_depth[-1] / 8)
-    bytes_per_sec = fsamp * byte_depth
-
-    return byte_depth, bytes_per_sec
-
-
 def parse_bag_topics(bag_file_path: str, topics: list):
     b = bagreader(bag_file_path)
     output_files = []
