@@ -10,7 +10,18 @@ from tqdm import tqdm
 
 
 class SignalFile:
-    def __init__(self, file_path: str, dtype: str, is_complex: bool):
+    def __init__(self, file_path, dtype: str, is_complex: bool):
+        """Signal file for processing
+
+        Parameters
+        ----------
+        file_path
+            Path to signal file
+        dtype : str
+            numpy datatype of file as string
+        is_complex : bool
+            Indicates whether signal is complex data
+        """
         self.fid = open(file_path, "rb+")
         self.dtype = np.dtype(dtype)
         self.offset = 0
@@ -28,11 +39,30 @@ class SignalFile:
         self.fid.close()
 
     def fseek(self, sample_offset: int):
+        """Sets desired offset from current sample location in file. It is used on next call of fread().
+
+        Parameters
+        ----------
+        sample_offset : int
+            Number of samples to skip from current location
+        """
         bytes_per_sample = self.byte_depth * self.sample_multiplier
         byte_offset = sample_offset * bytes_per_sample
         self.offset = byte_offset
 
-    def fread(self, num_samples: int):
+    def fread(self, num_samples: int) -> np.array:
+        """Returns requested number of signal samples from current location in file.
+
+        Parameters
+        ----------
+        num_samples : int
+            Number of samples to return
+
+        Returns
+        -------
+        np.array
+            Signal samples
+        """
         num_samples = num_samples * self.sample_multiplier
         samples = np.fromfile(
             file=self.fid,
@@ -47,14 +77,20 @@ class SignalFile:
 
         return samples
 
+    def get_sample_location(self) -> int:
+        """Returns location of file pointer after most recent fread() call.
+
+        Returns
+        -------
+        int
+            Location of last read sample in number of samples
+        """
+        byte_location = self.fid.tell()
+        sample_location = int(byte_location / self.sample_multiplier)
+        return sample_location
+
     def get_fid(self):
         return self.fid
-
-
-def fread(
-    fid, dtype: str, is_complex: bool, num_samples: int = -1, offset_samples: int = 0
-):
-    print()
 
 
 def compute_byte_properties(
