@@ -1,10 +1,6 @@
-# %%
-import re
 import numpy as np
 import pandas as pd
 import pathlib as plib
-from numbers import Number
-from typing import Tuple, Union
 from bagpy import bagreader
 from tqdm import tqdm
 
@@ -57,21 +53,6 @@ class SignalFile:
 
         return samples
 
-    def get_sample_location(self) -> int:
-        """Returns location of file pointer after most recent fread() call.
-
-        Returns
-        -------
-        int
-            Location of last read sample in number of samples
-        """
-        byte_location = self.fid.tell()
-        sample_location = int(byte_location / self.sample_multiplier)
-        return sample_location
-
-    def get_fid(self):
-        return self.fid
-
 
 def parse_bag_topics(bag_file_path: str, topics: list):
     bag_file_path = plib.Path(bag_file_path)
@@ -91,6 +72,3 @@ def get_parsed_topic(bag_dir_file_path: str, topic: str):
     topic_data = pd.read_csv(csv_file_path.with_suffix(".csv"))
 
     return topic_data
-
-
-# %%
