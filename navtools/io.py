@@ -11,68 +11,48 @@ from tqdm import tqdm
 
 class SignalFile:
     def __init__(self, file_path, dtype: str, is_complex: bool):
-        """Signal file for processing
-
-        Parameters
-        ----------
-        file_path
-            Path to signal file
-        dtype : str
-            numpy datatype of file as string
-        is_complex : bool
-            Indicates whether signal is complex data
-        """
-        self.fid = open(file_path, "rb+")
-        self.dtype = np.dtype(dtype)
+        self._fid = open(file_path, "rb+")
+        self._dtype = np.dtype(dtype)
+        self._byte_depth = self._dtype.itemsize
         self.offset = 0
-        self.byte_depth = self.dtype.itemsize
 
         MIN_NUMPY_COMPLEX_BYTE_DEPTH = 8
-        if is_complex and self.byte_depth < MIN_NUMPY_COMPLEX_BYTE_DEPTH:
-            self.is_complex_with_invalid_dtype = True
-            self.sample_multiplier = 2
+        if is_complex and self._byte_depth < MIN_NUMPY_COMPLEX_BYTE_DEPTH:
+            self._is_complex_with_invalid_dtype = True
+            self._sample_multiplier = 2
         else:
-            self.is_complex_with_invalid_dtype = False
-            self.sample_multiplier = 1
+            self._is_complex_with_invalid_dtype = False
+            self._sample_multiplier = 1
 
     def __del__(self):
-        self.fid.close()
+        self._fid.close()
+
+    @property
+    def sample_location(self) -> int:
+        byte_location = self._fid.tell()
+        sample_location = int(byte_location / self._sample_multiplier)
+        return sample_location
+
+    @property
+    def fid(self):
+        return self._fid
 
     def fseek(self, sample_offset: int):
-        """Sets desired offset from current sample location in file. It is used on next call of fread().
-
-        Parameters
-        ----------
-        sample_offset : int
-            Number of samples to skip from current location
-        """
-        bytes_per_sample = self.byte_depth * self.sample_multiplier
+        bytes_per_sample = self._byte_depth * self._sample_multiplier
         byte_offset = sample_offset * bytes_per_sample
         self.offset = byte_offset
 
     def fread(self, num_samples: int) -> np.array:
-        """Returns requested number of signal samples from current location in file.
-
-        Parameters
-        ----------
-        num_samples : int
-            Number of samples to return
-
-        Returns
-        -------
-        np.array
-            Signal samples
-        """
-        num_samples = num_samples * self.sample_multiplier
+        num_samples = num_samples * self._sample_multiplier
         samples = np.fromfile(
-            file=self.fid,
-            dtype=self.dtype,
+            file=self._fid,
+            dtype=self._dtype,
             count=num_samples,
             offset=self.offset,
         )
         self.offset = 0  # prevents unwanted sample skipping
 
-        if self.is_complex_with_invalid_dtype:
+        if self._is_complex_with_invalid_dtype:
             samples = samples.astype(np.float32).view(np.complex64)
 
         return samples
