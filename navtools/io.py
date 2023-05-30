@@ -74,9 +74,10 @@ class SignalFile:
 
 
 def parse_bag_topics(bag_file_path: str, topics: list):
+    bag_file_path = plib.Path(bag_file_path)
     b = bagreader(bag_file_path)
     output_files = []
-    DESCRIPTION = "Parsing Bag File... "
+    DESCRIPTION = "Parsing  %s ... " % (bag_file_path.name)
 
     for topic in tqdm(topics, desc=DESCRIPTION):
         topic_data = b.message_by_topic(topic)
