@@ -17,11 +17,15 @@ tqdm = "^4.65.0"
 bagpy = "^0.5"
 multipledispatch = "^0.6.0"
 planar = {git = "https://github.com/srush/planar"}
+opencv-python = "^4.7.0.72"
+cython = "^0.29.35"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
 mpld3 = "^0.5.9"
 ipykernel = "^6.23.1"
+nbformat = "^5.8.0"
+ipympl = "^0.9.3"
 
 [build-system]
 requires = ["poetry-core"]
