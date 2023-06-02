@@ -26,7 +26,9 @@ class SignalFile:
     @property
     def sample_location(self) -> int:
         byte_location = self._fid.tell()
-        sample_location = int(byte_location / self._sample_multiplier)
+        sample_location = int(
+            byte_location / (self._byte_depth * self._sample_multiplier)
+        )
         return sample_location
 
     @property
