@@ -10,7 +10,6 @@ class SignalFile:
         self._fid = open(file_path, "rb+")
         self._dtype = np.dtype(dtype)
         self._byte_depth = self._dtype.itemsize
-        self.offset = 0
 
         MIN_NUMPY_COMPLEX_BYTE_DEPTH = 8
         if is_complex and self._byte_depth < MIN_NUMPY_COMPLEX_BYTE_DEPTH:
@@ -35,10 +34,10 @@ class SignalFile:
     def fid(self):
         return self._fid
 
-    def fseek(self, sample_offset: int):
+    def fseek(self, sample_location: int):
         bytes_per_sample = self._byte_depth * self._sample_multiplier
-        byte_offset = sample_offset * bytes_per_sample
-        self.offset = byte_offset
+        byte_location = sample_location * bytes_per_sample
+        self._fid.seek(byte_location)
 
     def fread(self, num_samples: int) -> np.array:
         num_samples = num_samples * self._sample_multiplier
@@ -46,9 +45,7 @@ class SignalFile:
             file=self._fid,
             dtype=self._dtype,
             count=num_samples,
-            offset=self.offset,
         )
-        self.offset = 0  # prevents unwanted sample skipping
 
         if self._is_complex_with_invalid_dtype:
             samples = samples.astype(np.float32).view(np.complex64)
