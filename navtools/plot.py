@@ -140,3 +140,26 @@ def geoplot(
     )
 
     return fig
+
+
+def fft(
+    fft,
+    frequency_range=np.empty(0),
+    xlabel: str = "Frequency Index",
+    title: str = "FFT",
+    context: str = "talk",
+    label=None,
+) -> plt.axes:
+    sns.set_context(context)
+
+    if frequency_range.size != 0:
+        xlabel = "Frequency [Hz]"
+
+    _, ax = plt.subplots()
+    ax.plot(frequency_range, np.abs(fft), label=label)
+
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel("FFT Magnitude")
+
+    return ax
