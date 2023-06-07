@@ -1,6 +1,6 @@
-# %%
 import re
-import numpy as np
+import os
+import readline
 import pandas as pd
 import pathlib as plib
 from numbers import Number
@@ -40,4 +40,11 @@ def get_parsed_topic(bag_dir_file_path: str, topic: str):
     return topic_data
 
 
-# %%
+def tab_complete_input(directory_path, prompt_string="Provide Desired File: "):
+    os.chdir(directory_path)
+
+    readline.set_completer_delims(" \t\n=")
+    readline.parse_and_bind("tab: complete")
+
+    file_path = input(prompt_string)
+    return file_path

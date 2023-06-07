@@ -1,1 +1,1 @@
-from . import io, dsp, plot
+from . import io, dsp, plot, kinematics
