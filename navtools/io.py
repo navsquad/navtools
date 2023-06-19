@@ -5,6 +5,7 @@ import pandas as pd
 import pathlib as plib
 from bagpy import bagreader
 from tqdm import tqdm
+import numpy as np
 
 
 class SignalFile:

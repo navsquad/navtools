@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.matlib
 from numba import njit, prange
-import cv2 as cv
 
 
 def parcorr(baseband_signal: np.array, replica: np.array) -> np.array:
