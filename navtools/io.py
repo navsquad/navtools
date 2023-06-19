@@ -39,7 +39,7 @@ class SignalFile:
 
     def fseek(self, sample_location: int):
         bytes_per_sample = self._byte_depth * self._sample_multiplier
-        byte_location = sample_location * bytes_per_sample
+        byte_location = int(sample_location * bytes_per_sample)
         self._fid.seek(byte_location)
 
     def fread(self, num_samples: int) -> np.array:

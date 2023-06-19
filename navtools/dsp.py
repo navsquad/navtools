@@ -84,31 +84,31 @@ def vcarrier_replica(fcarr, fsamp, num_samples, rem_phase=0):
     return replica
 
 
-def upsample_code(
-    code: np.array, fsamp, fchip, num_samples=None, rem_phase=0, chip_shift=0
+def upsample_sequence(
+    sequence: np.array, fsamp, fchip, upsample_size=None, rem_phase=0, chip_shift=0
 ):
     samples_per_chip = fsamp / fchip
     chips_per_sample = 1 / samples_per_chip
     chip_phase = rem_phase + chip_shift
-    extended_code = np.concatenate([[code[-1]], code, [code[0]]])
+    extended_code = np.concatenate([[sequence[-1]], sequence, [sequence[0]]])
 
-    if num_samples is None:
-        num_samples = np.ceil((code.size - chip_phase) * samples_per_chip).astype(
+    if upsample_size is None:
+        upsample_size = np.ceil((sequence.size - chip_phase) * samples_per_chip).astype(
             int
         )  # samples per code period
 
-    fractional_chip_index = np.arange(0, num_samples) * chips_per_sample + chip_phase
-    whole_chip_index = np.mod(np.ceil(fractional_chip_index), code.size).astype(int)
+    fractional_chip_index = np.arange(0, upsample_size) * chips_per_sample + chip_phase
+    whole_chip_index = np.mod(np.ceil(fractional_chip_index), sequence.size).astype(int)
 
     upsampled_code = extended_code[
-        np.where(whole_chip_index == 0, code.size, whole_chip_index)
+        np.where(whole_chip_index == 0, sequence.size, whole_chip_index)
     ]
-    rem_phase = fractional_chip_index[-1] + chips_per_sample - code.size
+    rem_phase = fractional_chip_index[-1] + chips_per_sample - sequence.size
 
     return upsampled_code, rem_phase
 
 
-def pcps(signal_samples, code_replica, frange, fsamp):
+def pcps(signal_samples, prn_replica, frange, fsamp):
     results = np.empty([frange.size, signal_samples.size])
 
     for index, freq in enumerate(frange):
@@ -118,7 +118,7 @@ def pcps(signal_samples, code_replica, frange, fsamp):
         replica = np.exp(2 * np.pi * -1j * phase)
 
         baseband_signal = signal_samples * replica
-        correlation = parcorr(baseband_signal, code_replica)
+        correlation = parcorr(baseband_signal, prn_replica)
         results[index, :] = correlation
 
     return results
