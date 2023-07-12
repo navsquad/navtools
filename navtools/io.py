@@ -1,6 +1,7 @@
 import re
 import os
 import readline
+import numpy as np
 import pandas as pd
 import pathlib as plib
 from bagpy import bagreader
