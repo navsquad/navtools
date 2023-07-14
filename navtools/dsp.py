@@ -38,28 +38,22 @@ def carrier_replica(fcarr, fsamp, num_samples, rem_phase=0):
     return replica
 
 
-def vcarrier_replica(fcarr, fsamp, num_samples, rem_phase=0):
-    psamp = 1 / fsamp
-    sample_range = np.arange(0, num_samples)
-    time = psamp * sample_range
-    phase = np.expand_dims(fcarr, axis=1) * np.expand_dims(time, axis=0) + rem_phase
-
-    replica = np.exp(2 * np.pi * phase)
-    return replica
-
-
 def upsample_sequence(
     sequence: np.array, fsamp, fchip, upsample_size=None, rem_phase=0, chip_shift=0
 ):
     samples_per_chip = fsamp / fchip
     chips_per_sample = 1 / samples_per_chip
     chip_phase = rem_phase + chip_shift
-    extended_code = np.concatenate([[sequence[-1]], sequence, [sequence[0]]])
+    samples_per_code = np.ceil((sequence.size - chip_phase) * samples_per_chip).astype(
+        int
+    )
 
     if upsample_size is None:
-        upsample_size = np.ceil((sequence.size - chip_phase) * samples_per_chip).astype(
-            int
-        )  # samples per code period
+        upsample_size = samples_per_code  # samples per code period
+    multiple = upsample_size / samples_per_code
+    sequence = repeat_sequence(sequence=sequence, multiple=multiple)
+
+    extended_code = np.concatenate([[sequence[-1]], sequence, [sequence[0]]])
 
     fractional_chip_index = np.arange(0, upsample_size) * chips_per_sample + chip_phase
     whole_chip_index = np.mod(np.ceil(fractional_chip_index), sequence.size).astype(int)
@@ -72,12 +66,42 @@ def upsample_sequence(
     return upsampled_code, rem_phase
 
 
-def pcps(signal_samples, sample_range, conj_prn_replica_fft, fft, ifft, freq, fsamp):
-    psamp = 1 / fsamp
-    phase = freq * psamp * sample_range
-    replica = np.exp(2 * np.pi * -1j * phase, dtype=signal_samples.dtype)
+def repeat_sequence(sequence: np.array, multiple: float):
+    integer_sequence_multiples = np.tile(sequence, np.fix(multiple).astype(int))
+    fractional_index = np.round(sequence.size * np.mod(multiple, 1)).astype(int)
+    fractional_sequence = sequence[:fractional_index]
 
-    baseband_signal = signal_samples * replica
-    correlation = parcorr(baseband_signal, conj_prn_replica_fft, fft, ifft)
+    return np.concatenate([integer_sequence_multiples, fractional_sequence])
 
-    return correlation
+
+def pcps(
+    prn_replica_cfft,
+    baseband_signals_a,
+    baseband_signals_b,
+    fft,
+    ifft,
+):
+    correlation_a = np.array(
+        [
+            parcorr(
+                baseband_signal=baseband_signal,
+                conj_replica_fft=prn_replica_cfft,
+                fft_object=fft,
+                ifft_object=ifft,
+            )
+            for baseband_signal in baseband_signals_a
+        ]
+    )
+    correlation_b = np.array(
+        [
+            parcorr(
+                baseband_signal=baseband_signal,
+                conj_replica_fft=prn_replica_cfft,
+                fft_object=fft,
+                ifft_object=ifft,
+            )
+            for baseband_signal in baseband_signals_b
+        ]
+    )
+
+    return correlation_a, correlation_b
