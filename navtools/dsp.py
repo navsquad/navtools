@@ -1,37 +1,9 @@
 import numpy as np
-import numpy.matlib
-from numba import njit, prange
 
 
-def parcorr(baseband_signal: np.array, replica: np.array) -> np.array:
-    """Correlate baseband signal and replica in parallel using FFT.
-
-    Parameters
-    ----------
-    baseband_signal : np.array
-        Baseband sequence (eg. received GPS signal)
-    replica : np.array
-        Replica of signal within baseband signal (eg. GPS PRN)
-
-    Returns
-    -------
-    np.array
-        Correlation values across sample lags
-    """
-    replica_pad_size = baseband_signal.size - replica.size
-    padded_replica = np.pad(replica, (0, replica_pad_size))
-
-    baseband_fft = np.fft.fft(baseband_signal)
-    replica_fft = np.fft.fft(replica)
-
-    correlation_fft = np.multiply(baseband_fft, np.conjugate(replica_fft))
-    correlation_ifft = np.fft.ifft(correlation_fft)
-    correlation = np.power(np.abs(correlation_ifft), 2)
-
-    return correlation
-
-
-def vparcorr(baseband_signal: np.array, replica: np.array) -> np.array:
+def parcorr(
+    baseband_signal: np.array, conj_replica_fft: np.array, fft_object, ifft_object
+) -> np.array:
     """Correlate baseband signal and replica in parallel using FFT.
 
     Parameters
@@ -47,21 +19,13 @@ def vparcorr(baseband_signal: np.array, replica: np.array) -> np.array:
         Correlation values across sample lags
     """
 
-    baseband_fft = np.fft.fft(baseband_signal, axis=1)
-    replica_fft = np.fft.fft(replica)
+    baseband_fft = fft_object(baseband_signal)
 
-    correlation_fft = baseband_fft * np.conjugate(replica_fft)
-    correlation_ifft = np.fft.ifft(correlation_fft, axis=1)
-    correlation = np.power(np.abs(correlation_ifft), 2)
+    correlation_fft = baseband_fft * conj_replica_fft
+    correlation_ifft = ifft_object(correlation_fft)
+    correlation = np.abs(correlation_ifft) ** 2
 
     return correlation
-
-
-def fft(signal, fsamp):
-    num_samples = signal.size
-    fft = np.fft.fftshift(np.fft.fft(signal))
-    frequency_range = np.arange(-fsamp / 2, fsamp / 2, fsamp / num_samples)
-    return fft, frequency_range
 
 
 def carrier_replica(fcarr, fsamp, num_samples, rem_phase=0):
@@ -108,27 +72,12 @@ def upsample_sequence(
     return upsampled_code, rem_phase
 
 
-def pcps(signal_samples, prn_replica, frange, fsamp):
-    results = np.empty([frange.size, signal_samples.size])
+def pcps(signal_samples, sample_range, conj_prn_replica_fft, fft, ifft, freq, fsamp):
+    psamp = 1 / fsamp
+    phase = freq * psamp * sample_range
+    replica = np.exp(2 * np.pi * -1j * phase, dtype=signal_samples.dtype)
 
-    for index, freq in enumerate(frange):
-        psamp = 1 / fsamp
-        sample_range = np.arange(0, signal_samples.size)
-        phase = freq * psamp * sample_range
-        replica = np.exp(2 * np.pi * -1j * phase)
-
-        baseband_signal = signal_samples * replica
-        correlation = parcorr(baseband_signal, prn_replica)
-        results[index, :] = correlation
-
-    return results
-
-
-def pcps3(signal_samples, code_replica, frange, fsamp):
-    replica = vcarrier_replica(
-        fsamp=fsamp, num_samples=signal_samples.size, fcarr=frange
-    )
     baseband_signal = signal_samples * replica
-    correlation = vparcorr(baseband_signal=baseband_signal, replica=code_replica)
+    correlation = parcorr(baseband_signal, conj_prn_replica_fft, fft, ifft)
 
     return correlation
