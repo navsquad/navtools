@@ -39,7 +39,7 @@ class SimulationConfiguration:
 
 
 @dataclass(frozen=True)
-class SatelliteStates:
+class SatelliteState:
     epoch: int
     gps_time: GPSTime
     pos: float
@@ -80,7 +80,7 @@ class Simulation:
                 is_visible = np.degrees(sat_el) > self._config.mask_angle
 
                 if is_visible:
-                    self._get_states(
+                    self._compute_state(
                         epoch=epoch,
                         sat_prn=sat_prn,
                         sat_info=sat_info,
@@ -98,7 +98,7 @@ class Simulation:
 
         return trajectory, velocity
 
-    def _get_states(self, epoch, sat_prn, sat_info, rx_pos, rx_vel):
+    def _compute_state(self, epoch, sat_prn, sat_info, rx_pos, rx_vel):
         reference_sat_states = self.ref_states[sat_prn]
 
         # extract states
@@ -106,14 +106,14 @@ class Simulation:
         sat_vel = sat_info[1]
 
         # compute truth observables
-        pos_difference = sat_pos - rx_pos
-        range = np.linalg.norm(pos_difference)
+        rx_pos_rel_sat = rx_pos - sat_pos
+        range = np.linalg.norm(rx_pos_rel_sat)
 
-        unit_vector = pos_difference / range
+        unit_vector = rx_pos_rel_sat / range
         rx_vel_rel_sat = rx_vel - sat_vel
         range_rate = np.sum(rx_vel_rel_sat * unit_vector)
 
-        epoch_state = SatelliteStates(
+        epoch_state = SatelliteState(
             epoch=epoch,
             gps_time=self._time,
             pos=sat_pos,
