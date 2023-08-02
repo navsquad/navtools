@@ -1,0 +1,4 @@
+[submodule "libs/laika"]
+	path = libs/laika
+	url = git@github.com:tannerkoza/laika.git
+	branch = master
