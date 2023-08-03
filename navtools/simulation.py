@@ -106,12 +106,12 @@ class Simulation:
         sat_vel = sat_info[1]
 
         # compute truth observables
-        sat_pos_rel_rx = sat_pos - rx_pos
-        range = np.linalg.norm(sat_pos_rel_rx)
+        rx_pos_rel_sat = rx_pos - sat_pos
+        range = np.linalg.norm(rx_pos_rel_sat)
 
-        unit_vector = sat_pos_rel_rx / range
-        sat_vel_rel_rx = sat_vel - rx_vel
-        range_rate = np.sum(sat_vel_rel_rx * unit_vector)
+        unit_vector = rx_pos_rel_sat / range
+        rx_vel_rel_sat = rx_vel - sat_vel
+        range_rate = np.sum(rx_vel_rel_sat * unit_vector)
 
         epoch_state = SatelliteState(
             epoch=epoch,
