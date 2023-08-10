@@ -1,5 +1,4 @@
 import importlib
-import warnings
 import numpy as np
 
 from dataclasses import dataclass
@@ -26,7 +25,7 @@ class SatelliteEmitterState:
 
 
 class SatelliteEmitters:
-    def __init__(self, constellations: list = None, mask_angle: float = 10.0):
+    def __init__(self, constellations: list, mask_angle: float = 10.0):
         constellation_literals = self._get_constellation_literals(
             constellations=constellations
         )
