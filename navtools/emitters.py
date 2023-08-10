@@ -70,6 +70,7 @@ class SatelliteEmitters:
             emitter_states=emitter_states,
             is_only_visible_emitters=is_only_visible_emitters,
         )
+        return self._emitter_states
 
     def _compute_los_states(self, emitter_states: dict, is_only_visible_emitters: bool):
         emitters = defaultdict()
@@ -109,7 +110,6 @@ class SatelliteEmitters:
             )
             emitters[emitter_prn] = emitter_state
 
-        self._emitter_states = emitters
         return emitters
 
     @staticmethod
