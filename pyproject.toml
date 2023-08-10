@@ -15,7 +15,7 @@ plotly = "^5.14.1"
 tqdm = "^4.65.0"
 planar = {git = "https://github.com/srush/planar"}
 scipy = "1.10"
-laika = {path = "libs/laika"}
+laika = {path = "libs/laika", develop = true}
 bagpy = "^0.5"
 jupyter = "^1.0.0"
 sympy = "^1.12"

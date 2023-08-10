@@ -1487,11 +1487,11 @@ files = [
 [[package]]
 name = "laika"
 version = "0.0.1"
-description = ""
+description = "GNSS library for use with the comma.ai ecosystem"
 optional = false
 python-versions = ">= 3.6"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 certifi = "*"
@@ -3248,4 +3248,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "08d0bf43789ba095aa084efbfa8bf21247db1a90c1fd11b8673e23099c9cf58a"
+content-hash = "a129dfea371c6b5fa82e989ce6e56efd7e63adfbaaa5f3ec0b97b401c559a98d"
