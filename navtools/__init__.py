@@ -1,1 +1,1 @@
-from . import io, dsp, plot, kinematics, emitters, simulation, exceptions
+from . import io, dsp, plot, kinematics, emitters, simulation, constants, exceptions
