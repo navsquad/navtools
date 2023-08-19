@@ -7,12 +7,59 @@ from dataclasses import dataclass
 from collections import defaultdict
 from datetime import datetime, timezone
 from skyfield.api import load, EarthSatellite
+from numba import njit
 
 from navtools.exceptions import UnsetReceiverState, UnsupportedConstellation
+from navtools.kinematics import ecef2lla, ecef2enu
 
 from laika import AstroDog
 from laika.gps_time import GPSTime
 from laika.helpers import get_el_az
+
+
+@njit
+def compute_visibility_status(
+    rx_pos: np.array, emitter_pos: np.array, mask_angle: float = 10.0
+):
+    emitter_az, emitter_el = compute_az_and_el(rx_pos=rx_pos, emitter_pos=emitter_pos)
+    is_visible = np.degrees(emitter_el) >= mask_angle
+
+    return is_visible, emitter_az, emitter_el
+
+
+@njit
+def compute_az_and_el(rx_pos: np.array, emitter_pos: np.array):
+    range, _ = compute_range_and_unit_vector(rx_pos=rx_pos, emitter_pos=emitter_pos)
+    lla = ecef2lla(x=rx_pos[0], y=rx_pos[1], z=rx_pos[2])
+    enu = ecef2enu(
+        x=emitter_pos[0],
+        y=emitter_pos[1],
+        z=emitter_pos[2],
+        lat0=lla.lat,
+        lon0=lla.lon,
+        alt0=lla.alt,
+    )
+    el = np.arcsin(enu.up / range)
+    az = np.arctan2(enu.east, enu.north)
+
+    return az, el
+
+
+@njit
+def compute_range_and_unit_vector(rx_pos: np.array, emitter_pos: np.array):
+    rx_pos_rel_sat = rx_pos - emitter_pos
+    range = np.sqrt(np.sum(rx_pos_rel_sat**2))
+    unit_vector = rx_pos_rel_sat / range
+
+    return range, unit_vector
+
+
+@njit
+def compute_range_rate(rx_vel: np.array, emitter_vel: np.array, unit_vector: np.array):
+    rx_vel_rel_sat = rx_vel - emitter_vel
+    range_rate = np.sum(rx_vel_rel_sat * unit_vector)
+
+    return range_rate
 
 
 @dataclass(frozen=True)
@@ -25,6 +72,8 @@ class SatelliteEmitterState:
     clock_drift: float
     range: float
     range_rate: float
+    az: float
+    el: float
 
 
 class SatelliteEmitters:
@@ -41,6 +90,7 @@ class SatelliteEmitters:
 
         self._mask_angle = mask_angle
         self._is_rx_state_unset = True
+        self._is_multiple_epoch = False
         self._rx_pos = np.zeros(3)
         self._rx_vel = np.zeros(3)
 
@@ -59,7 +109,7 @@ class SatelliteEmitters:
     @rx_pos.setter
     def rx_pos(self, pos: np.array):
         self._is_rx_state_unset = False
-        self._rx_pos = pos
+        self._rx_pos = np.array(pos)
 
     @rx_vel.setter
     def rx_vel(self, vel: np.array):
@@ -70,29 +120,47 @@ class SatelliteEmitters:
         if self._is_rx_state_unset:
             raise UnsetReceiverState
 
-        self._gps_time = GPSTime.from_datetime(datetime=datetime)
+        if isinstance(datetime, list):
+            self._is_multiple_epoch = True
+
         emitter_states = {}
 
-        if self._laika_constellations:
-            laika_states = self._dog.get_all_sat_info(time=self._gps_time)
-            emitter_states.update(laika_states)
+        if self._is_multiple_epoch:  # TODO: this could be rewritten but i'm tired
+            if self._laika_constellations:
+                pass
 
-        if self._skyfield_constellations:
-            datetime = datetime.replace(tzinfo=timezone.utc)
-            time = self._ts.from_datetime(datetime=datetime)
-            skyfield_states = self._get_all_skyfield_states(time=time)
-            emitter_states.update(skyfield_states)
+            if self._skyfield_constellations:
+                datetime = [time.replace(tzinfo=timezone.utc) for time in datetime]
+                time = self._ts.from_datetimes(datetime_list=datetime)
+                skyfield_states = self._get_all_skyfield_states(time=time)
+                emitter_states.update(skyfield_states)
 
-        self._emitter_states = self._compute_los_states(
-            emitter_states=emitter_states,
-            is_only_visible_emitters=is_only_visible_emitters,
-        )
+        else:
+            if self._laika_constellations:
+                self._gps_time = GPSTime.from_datetime(datetime=datetime)
+                laika_states = self._dog.get_all_sat_info(time=self._gps_time)
+                emitter_states.update(laika_states)
+
+            if self._skyfield_constellations:
+                datetime = datetime.replace(tzinfo=timezone.utc)
+                time = self._ts.from_datetime(datetime=datetime)
+                skyfield_states = self._get_all_skyfield_states(time=time)
+                emitter_states.update(skyfield_states)
+
+        if self._is_multiple_epoch:
+            # TODO: process all skyfield at one time then compare
+            pass
+        else:
+            self._emitter_states = self._compute_single_epoch_los_states(
+                emitter_states=emitter_states,
+                is_only_visible_emitters=is_only_visible_emitters,
+            )
         return self._emitter_states
 
-    def _compute_los_states(self, emitter_states: dict, is_only_visible_emitters: bool):
+    def _compute_single_epoch_los_states(
+        self, emitter_states: dict, is_only_visible_emitters: bool
+    ):
         emitters = defaultdict()
-        emitter_prn_log = []
-        emitter_pos_log = []
 
         for emitter_prn, emitter_state in emitter_states.items():
             emitter_pos = emitter_state[0]
@@ -100,82 +168,40 @@ class SatelliteEmitters:
             emitter_clock_bias = emitter_state[2]
             emitter_clock_drift = emitter_state[3]
 
-            emitter_prn_log.append(emitter_prn)
-            emitter_pos_log.append(emitter_pos)
+            if is_only_visible_emitters:
+                is_visible, emitter_az, emitter_el = compute_visibility_status(
+                    rx_pos=self._rx_pos,
+                    emitter_pos=emitter_pos,
+                    mask_angle=self._mask_angle,
+                )
 
-            range, unit_vector = self.compute_range_and_unit_vector(
+                if not is_visible:
+                    continue
+
+            range, unit_vector = compute_range_and_unit_vector(
                 rx_pos=self._rx_pos, emitter_pos=emitter_pos
             )
-            range_rate = self.compute_range_rate(
+            range_rate = compute_range_rate(
                 rx_vel=self._rx_vel, emitter_vel=emitter_vel, unit_vector=unit_vector
             )
 
             emitter_state = SatelliteEmitterState(
                 prn=emitter_prn,
-                gps_time=self._gps_time,
+                gps_time=1,
                 pos=emitter_pos,
                 vel=emitter_vel,
                 clock_bias=emitter_clock_bias,
                 clock_drift=emitter_clock_drift,
                 range=range,
                 range_rate=range_rate,
+                az=emitter_az,
+                el=emitter_el,
             )
             emitters[emitter_prn] = emitter_state
 
-        if is_only_visible_emitters:
-            is_visible = self.compute_visibility_status(
-                rx_pos=self._rx_pos,
-                emitter_pos=np.asarray(emitter_pos_log),
-                mask_angle=self._mask_angle,
-            )
-            prns = np.asarray(emitter_prn_log)
-            visible_prns = prns[is_visible]
-            emitters = {prn: emitters[prn] for prn in visible_prns}
-
         return emitters
 
-    @staticmethod
-    def compute_visibility_status(
-        rx_pos: np.array, emitter_pos: np.array, mask_angle: float = 10.0
-    ):
-        emitter_range, _ = SatelliteEmitters.compute_range_and_unit_vector(
-            rx_pos=rx_pos, emitter_pos=emitter_pos
-        )
-        emitter_pos = emitter_pos.reshape(-1, 3)
-
-        rx_lat, rx_lon, rx_alt = pmap.ecef2geodetic(rx_pos[0], rx_pos[1], rx_pos[2])
-        _, _, emitter_down = pmap.ecef2ned(
-            emitter_pos[:, 0],
-            emitter_pos[:, 1],
-            emitter_pos[:, 2],
-            rx_lat,
-            rx_lon,
-            rx_alt,
-        )
-        emitter_el = np.arcsin(-emitter_down / emitter_range)
-        is_visible = np.degrees(emitter_el) >= mask_angle
-
-        return is_visible
-
-    @staticmethod
-    def compute_range_and_unit_vector(rx_pos: np.array, emitter_pos: np.array):
-        rx_pos_rel_sat = rx_pos - emitter_pos
-        range = np.linalg.norm(rx_pos_rel_sat.reshape(-1, 3), axis=1, keepdims=True)
-        unit_vector = rx_pos_rel_sat / range
-
-        return range.squeeze(), unit_vector
-
-    @staticmethod
-    def compute_range_rate(
-        rx_vel: np.array, emitter_vel: np.array, unit_vector: np.array
-    ):
-        rx_vel_rel_sat = rx_vel - emitter_vel
-        range_rate = np.sum(
-            rx_vel_rel_sat.reshape(-1, 3) * unit_vector.reshape(-1, 3), axis=1
-        )
-
-        return range_rate
-
+    # def _compute_time_array_laika_info(self):
     def _filter_constellations(self, constellations: list):
         if isinstance(constellations, str):
             constellations = constellations.split()
@@ -212,14 +238,14 @@ class SatelliteEmitters:
 
     def _get_skyfield_satellites(self):
         constellations = self._skyfield_constellations
-
         satellites = [
             load.tle_file(
                 url=f"https://celestrak.org/NORAD/elements/gp.php?GROUP={constellation}&FORMAT=tle",
-                reload=True,
             )
             for constellation in constellations
         ]
+        [print(constellation) for constellation in constellations]
+
         satellites = list(itertools.chain(*satellites))  # flatten list
 
         return satellites
