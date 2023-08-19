@@ -13,13 +13,6 @@ class InvalidReceiverSimulationConfiguration(Exception):
         super().__init__(self.message)
 
 
-class UnsetReceiverState(Exception):
-    def __init__(self):
-        message = "no receiver state was set!"
-        self.message = message
-        super().__init__(self.message)
-
-
 class UnsupportedConstellation(Exception):
     def __init__(self, constellation):
         message = f"{constellation} is not supported!"
