@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from collections import defaultdict
 from datetime import datetime, timezone
 from skyfield.api import load
+from skyfield.framelib import itrs
 from numba import njit
 from tqdm import tqdm
 
@@ -168,20 +169,20 @@ class SatelliteEmitters:
             num_epochs = len(datetimes)
             rx_pos = np.tile(
                 rx_pos, (num_epochs, 1)
-            )  # need this to iterate with states over time
+            )  # needed to iterate with states over time
             rx_vel = np.zeros_like(rx_pos)
 
         if self._laika_constellations:
-            laika_desc = f"propagating and extracting {self._laika_string} states"
+            laika_desc = f"extracting {self._laika_string} states"
             laika_duration_states = [
                 self._dog.get_all_sat_info(time=gps_time)
                 for gps_time in tqdm(gps_times, desc=laika_desc)
             ]
 
         if self._skyfield_constellations:
-            utc_datetimes = [
+            utc_datetimes = (
                 datetime.replace(tzinfo=timezone.utc) for datetime in datetimes
-            ]
+            )
             times = self._ts.from_datetimes(datetime_list=utc_datetimes)
             skyfield_duration_states = self._get_multiple_epoch_skyfield_states(
                 times=times
@@ -328,21 +329,19 @@ class SatelliteEmitters:
 
     def _get_multiple_epoch_skyfield_states(self, times):
         emitters = []
-
-        skyfield_prop_desc = f"propagating {self._skyfield_string} states"
         skyfield_ex_desc = f"extracting {self._skyfield_string} states"
 
-        geocentric_emitters = [
-            (emitter.name, emitter.at(times))
-            for emitter in tqdm(self._skyfield_satellites, desc=skyfield_prop_desc)
+        ecef_emitters = [
+            (emitter.name, emitter.at(times).frame_xyz_and_velocity(itrs))
+            for emitter in self._skyfield_satellites
         ]
         epoch_template = {
-            key: None for key in list(zip(*geocentric_emitters))[0]
+            key: None for key in list(zip(*ecef_emitters))[0]
         }  # slightly faster than defaultdict
 
         for epoch in tqdm(range(len(times)), desc=skyfield_ex_desc):
             emitters_epoch = self._extract_skyfield_states(
-                geocentric_emitters=geocentric_emitters,
+                ecef_emitters=ecef_emitters,
                 output_dict=epoch_template,
                 epoch=epoch,
             )
@@ -351,37 +350,11 @@ class SatelliteEmitters:
         return emitters
 
     @staticmethod
-    def _extract_skyfield_states(
-        geocentric_emitters: list, output_dict: dict, epoch: int
-    ):
-        for emitter_name, emitter_state in geocentric_emitters:
-            pos = np.array(
-                [
-                    emitter_state.xyz.m[0, epoch],
-                    emitter_state.xyz.m[1, epoch],
-                    emitter_state.xyz.m[2, epoch],
-                ]
-            )
-            vel = np.array(
-                [
-                    emitter_state.velocity.m_per_s[0, epoch],
-                    emitter_state.velocity.m_per_s[1, epoch],
-                    emitter_state.velocity.m_per_s[2, epoch],
-                ]
-            )
+    def _extract_skyfield_states(ecef_emitters: list, output_dict: dict, epoch: int):
+        for emitter_name, emitter_state in ecef_emitters:
+            pos = np.array(emitter_state[0].m[:, epoch])
+            vel = np.array(emitter_state[1].m_per_s[:, epoch])
             state = [pos, vel, 0, 0]
             output_dict[emitter_name] = state
 
         return output_dict
-
-    # if self._is_multiple_epoch:  # TODO: this could be rewritten but i'm tired
-    #     if self._laika_constellations:
-    #         pass
-
-    #     if self._skyfield_constellations:
-    #         datetime = [time.replace(tzinfo=timezone.utc) for time in datetime]
-    #         time = self._ts.from_datetimes(datetime_list=datetime)
-    #         skyfield_states = self._get_all_skyfield_states(time=time)
-    #         emitter_states.update(skyfield_states)
-
-    # else:
