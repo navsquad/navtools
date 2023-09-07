@@ -1,6 +1,7 @@
 import importlib
 import numpy as np
 import itertools
+import warnings
 
 from dataclasses import dataclass
 from collections import defaultdict
@@ -85,7 +86,6 @@ class SatelliteEmitters:
             self._dog = AstroDog(valid_const=laika_literals)
 
         if self._skyfield_constellations:
-            self._skyfield_satellites = self._get_skyfield_satellites()
             self._ts = load.timescale()
 
         self._mask_angle = mask_angle
@@ -121,6 +121,11 @@ class SatelliteEmitters:
         if self._laika_constellations:
             laika_states = self._dog.get_all_sat_info(time=self._gps_time)
             emitter_states.update(laika_states)
+
+        if not hasattr(self, "_skyfield_satellites"):
+            self._skyfield_satellites = self._get_skyfield_satellites(
+                first_datetime=datetime
+            )
 
         if self._skyfield_constellations:
             time = self._ts.from_datetime(
@@ -180,6 +185,9 @@ class SatelliteEmitters:
             ]
 
         if self._skyfield_constellations:
+            self._skyfield_satellites = self._get_skyfield_satellites(
+                first_datetime=datetimes[0]
+            )
             utc_datetimes = (
                 datetime.replace(tzinfo=timezone.utc) for datetime in datetimes
             )
@@ -264,18 +272,20 @@ class SatelliteEmitters:
             constellations = constellations.split()
 
         GNSS = ["gps", "glonass", "galileo", "beidou", "qznss"]
-        LEO = ["iridium", "iridium-next", "orbcomm", "globalstar", "oneweb", "starlink"]
+        LEO = ["iridium", "iridium-NEXT", "orbcomm", "globalstar", "oneweb", "starlink"]
 
-        self._laika_constellations = []
-        self._skyfield_constellations = []
-
-        for constellation in constellations:
-            if constellation.lower() in GNSS:
-                self._laika_constellations.append(constellation)
-            elif constellation.lower() in LEO:
-                self._skyfield_constellations.append(constellation)
-            else:
-                raise UnsupportedConstellation(constellation=constellation)
+        self._laika_constellations = [
+            gnss
+            for gnss in GNSS
+            for constellation in constellations
+            if constellation.casefold() == gnss.casefold()
+        ]
+        self._skyfield_constellations = [
+            leo
+            for leo in LEO
+            for constellation in constellations
+            if constellation.casefold() == leo.casefold()
+        ]
 
         if self._laika_constellations:
             self._laika_string = ", ".join(
@@ -303,14 +313,33 @@ class SatelliteEmitters:
 
         return literals
 
-    def _get_skyfield_satellites(self):
+    def _get_skyfield_satellites(self, first_datetime):
+        FIRST_CELESTRAK_REPO_DATETIME = datetime(2023, 8, 11)
+
         constellations = self._skyfield_constellations
+
+        if first_datetime >= FIRST_CELESTRAK_REPO_DATETIME:
+            year = first_datetime.timetuple().tm_year
+            day = first_datetime.timetuple().tm_yday
+            urls = [
+                f"https://raw.githubusercontent.com/tannerkoza/celestrak-orbital-data/main/{constellation}/{year}/{day}/{constellation}.tle"
+                for constellation in constellations
+            ]
+        else:
+            warnings.warn(
+                "datetimes preceed earliest TLE in database, therfore, orbits may be invalid. Using current TLE from celestrak. This will be addressed in the future."
+            )
+            urls = [
+                f"https://celestrak.org/NORAD/elements/gp.php?GROUP={constellation}&FORMAT=tle"
+                for constellation in constellations
+            ]
+
         satellites = [
             load.tle_file(
-                url=f"https://celestrak.org/NORAD/elements/gp.php?GROUP={constellation}&FORMAT=tle",
+                url=url,
                 reload=True,
             )
-            for constellation in constellations
+            for url in urls
         ]
 
         satellites = list(itertools.chain(*satellites))  # flatten list
