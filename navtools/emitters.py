@@ -11,8 +11,8 @@ from skyfield.framelib import itrs
 from numba import njit
 from tqdm import tqdm
 
-from navtools.exceptions import UnsupportedConstellation
-from navtools.kinematics import ecef2lla, ecef2enu
+import navtools.gnss as gnss
+from navtools.conversions import ecef2lla, ecef2enu
 
 from laika import AstroDog
 from laika.gps_time import GPSTime
@@ -162,7 +162,7 @@ class SatelliteEmitters:
         self,
         datetimes: datetime,
         rx_pos: np.array,
-        rx_vel: np.array = np.zeros_like(rx_pos),
+        rx_vel: np.array = None,
         is_only_visible_emitters: bool = True,
     ):
         laika_duration_states = []
@@ -387,3 +387,14 @@ class SatelliteEmitters:
             output_dict[emitter_name] = state
 
         return output_dict
+
+
+class SatelliteEmitterSignalFactory:
+    def __init__(self):
+        pass
+
+    def get_signal_properties(signal_type: str):
+        signal_type = "".join([i for i in signal_type if i.isalnum()]).casefold()
+        match signal_type:
+            case "gpsl1ca":
+                return gnss.GPS_L1CA
