@@ -31,6 +31,7 @@ pymap3d = "^3.0.1"
 skyfield = "^1.46"
 codon-jit = "^0.1.7"
 numba = "^0.57.1"
+pyfftw = "^0.13.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

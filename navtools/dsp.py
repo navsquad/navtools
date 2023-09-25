@@ -1,46 +1,93 @@
 import numpy as np
 
+from numba import njit
+
 
 def parcorr(
-    baseband_signal: np.array, conj_replica_fft: np.array, fft_object, ifft_object
+    sequence: np.array, baseline_sequence: np.array, fft=np.fft.fft, ifft=np.fft.ifft
 ) -> np.array:
-    """Correlate baseband signal and replica in parallel using FFT.
+    """parallel correlation of a sequence with a baseline sequence using fft and ifft of user's choice
 
     Parameters
     ----------
-    baseband_signal : np.array
-        Baseband sequence (eg. received GPS signal)
-    replica : np.array
-        Replica of signal within baseband signal (eg. GPS PRN)
+    sequence : np.array
+        sequence to correlate against (eg. raw signal data)
+    baseline_sequence : np.array
+        sequence to correlate with (eg. prn replica)
+    fft : _type_, optional
+        fft function, by default np.fft.fft
+    ifft : _type_, optional
+        ifft function, by default np.fft.ifft
 
     Returns
     -------
     np.array
-        Correlation values across sample lags
+        correlation magnitudes for each index of baseline sequence
     """
 
-    baseband_fft = fft_object(baseband_signal)
-
-    correlation_fft = baseband_fft * conj_replica_fft
-    correlation_ifft = ifft_object(correlation_fft)
+    correlation_fft = fft(sequence) * np.conj(fft(baseline_sequence))
+    correlation_ifft = ifft(correlation_fft)
     correlation = np.abs(correlation_ifft) ** 2
 
     return correlation
 
 
-def carrier_replica(fcarr, fsamp, num_samples, rem_phase=0):
-    psamp = 1 / fsamp
-    sample_range = np.arange(0, num_samples)
-    time = psamp * sample_range
-    phase = fcarr * time + rem_phase
+def pcps(
+    code_replicas: np.array,
+    baseband_signals: np.array,
+    code_fft=np.fft.fft,
+    baseband_fft=np.fft.fft,
+    ifft=np.fft.ifft,
+) -> np.array:
+    """_summary_
 
-    replica = np.exp(2 * np.pi * phase)
-    return replica
+    Parameters
+    ----------
+    code_replicas : np.array
+        _description_
+    baseband_signals : np.array
+        _description_
+    code_fft : _type_, optional
+        _description_, by default np.fft.fft
+    baseband_fft : _type_, optional
+        _description_, by default np.fft.fft
+    ifft : _type_, optional
+        _description_, by default np.fft.ifft
+
+    Returns
+    -------
+    np.array
+        _description_
+    """
+    code_replica_cffts = (
+        np.conj(code_fft(code_replica)) for code_replica in code_replicas
+    )
+    baseband_signals_fft = baseband_fft(baseband_signals)
+
+    correlations = (
+        pcps_parcorr(
+            baseband_signals_fft=baseband_signals_fft,
+            code_replica_cfft=code_replica_cfft,
+        )
+        for code_replica_cfft in code_replica_cffts
+    )
+
+    def pcps_parcorr(baseband_signals_fft: np.array, code_replica_cfft: np.array):
+        """parallel correlation (see :func:`navtools.dsp.parcorr`) where parameters are outputs of different FFTs"""
+
+        correlation_fft = baseband_signals_fft * code_replica_cfft
+        correlation_ifft = ifft(correlation_fft)
+        correlation = np.abs(correlation_ifft) ** 2
+
+        return correlation
+
+    return correlations
 
 
 def upsample_sequence(
     sequence: np.array, fsamp, fchip, upsample_size=None, rem_phase=0, chip_shift=0
 ):
+    # TODO: add comments to make clear
     samples_per_chip = fsamp / fchip
     chips_per_sample = 1 / samples_per_chip
     chip_phase = rem_phase + chip_shift
@@ -72,36 +119,3 @@ def repeat_sequence(sequence: np.array, multiple: float):
     fractional_sequence = sequence[:fractional_index]
 
     return np.concatenate([integer_sequence_multiples, fractional_sequence])
-
-
-def pcps(
-    prn_replica_cfft,
-    baseband_signals_a,
-    baseband_signals_b,
-    fft,
-    ifft,
-):
-    correlation_a = np.array(
-        [
-            parcorr(
-                baseband_signal=baseband_signal,
-                conj_replica_fft=prn_replica_cfft,
-                fft_object=fft,
-                ifft_object=ifft,
-            )
-            for baseband_signal in baseband_signals_a
-        ]
-    )
-    correlation_b = np.array(
-        [
-            parcorr(
-                baseband_signal=baseband_signal,
-                conj_replica_fft=prn_replica_cfft,
-                fft_object=fft,
-                ifft_object=ifft,
-            )
-            for baseband_signal in baseband_signals_b
-        ]
-    )
-
-    return correlation_a, correlation_b

@@ -129,7 +129,7 @@ def geoplot(
     fig.update_layout(
         title=title,
         font=dict(
-            family="Courier New, monospace",
+            # family="Courier New, monospace",
             size=18,
         ),
     )

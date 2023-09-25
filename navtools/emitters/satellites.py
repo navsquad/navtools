@@ -1,71 +1,29 @@
-import importlib
 import numpy as np
+import importlib
 import itertools
 import warnings
 
 from dataclasses import dataclass
+from tqdm import tqdm
 from collections import defaultdict
 from datetime import datetime, timezone
 from skyfield.api import load
 from skyfield.framelib import itrs
-from numba import njit
-from tqdm import tqdm
-
-import navtools.gnss as gnss
-from navtools.conversions import ecef2lla, ecef2enu
 
 from laika import AstroDog
 from laika.gps_time import GPSTime
-
-
-@njit
-def compute_visibility_status(
-    rx_pos: np.array, emitter_pos: np.array, mask_angle: float = 10.0
-):
-    emitter_az, emitter_el = compute_az_and_el(rx_pos=rx_pos, emitter_pos=emitter_pos)
-    is_visible = np.degrees(emitter_el) >= mask_angle
-
-    return is_visible, emitter_az, emitter_el
-
-
-@njit
-def compute_az_and_el(rx_pos: np.array, emitter_pos: np.array):
-    range, _ = compute_range_and_unit_vector(rx_pos=rx_pos, emitter_pos=emitter_pos)
-    lla = ecef2lla(x=rx_pos[0], y=rx_pos[1], z=rx_pos[2])
-    enu = ecef2enu(
-        x=emitter_pos[0],
-        y=emitter_pos[1],
-        z=emitter_pos[2],
-        lat0=lla.lat,
-        lon0=lla.lon,
-        alt0=lla.alt,
-    )
-    el = np.arcsin(enu.up / range)
-    az = np.arctan2(enu.east, enu.north)
-
-    return az, el
-
-
-@njit
-def compute_range_and_unit_vector(rx_pos: np.array, emitter_pos: np.array):
-    rx_pos_rel_sat = rx_pos - emitter_pos
-    range = np.sqrt(np.sum(rx_pos_rel_sat**2))
-    unit_vector = rx_pos_rel_sat / range
-
-    return range, unit_vector
-
-
-@njit
-def compute_range_rate(rx_vel: np.array, emitter_vel: np.array, unit_vector: np.array):
-    rx_vel_rel_sat = rx_vel - emitter_vel
-    range_rate = np.sum(rx_vel_rel_sat * unit_vector)
-
-    return range_rate
+from navtools.emitters.tools import (
+    compute_visibility_status,
+    compute_range_and_unit_vector,
+    compute_range_rate,
+)
 
 
 @dataclass(frozen=True)
 class SatelliteEmitterState:
-    prn: str
+    """dataclass that contains states for satellite emitters produced by :class:`navtools.emitters.satellites.SatelliteEmitters`"""
+
+    id: str
     gps_time: GPSTime
     pos: float
     vel: float
@@ -78,6 +36,8 @@ class SatelliteEmitterState:
 
 
 class SatelliteEmitters:
+    """contains emitters for specified constellations and returns states and observables for given receiver states and time"""
+
     def __init__(self, constellations: list, mask_angle: float = 10.0):
         self._filter_constellations(constellations=constellations)
 
@@ -112,7 +72,25 @@ class SatelliteEmitters:
         rx_pos: np.array,
         rx_vel: np.array = np.zeros(3),
         is_only_visible_emitters: bool = True,
-    ):
+    ) -> dict:
+        """computes satellite states and observables for given epoch/time and receiver states
+
+        Parameters
+        ----------
+        datetime : datetime
+            time/epoch associated with current receiver states
+        rx_pos : np.array
+            receiver position in ECEF reference frame
+        rx_vel : np.array, optional
+            receiver velocity in ECEF reference frame, by default np.zeros(3)
+        is_only_visible_emitters : bool, optional
+            determines whether returned emitters are only those in view, by default True
+
+        Returns
+        -------
+        dict
+            emitter states for a particular time/epoch
+        """
         emitter_states = {}
         self._gps_time = GPSTime.from_datetime(datetime=datetime)
         self._rx_pos = rx_pos
@@ -147,7 +125,25 @@ class SatelliteEmitters:
         rx_pos: np.array,
         rx_vel: np.array = np.zeros(3),
         is_only_visible_emitters: bool = True,
-    ):
+    ) -> dict:
+        """wrapper for :func:`navtools.emitters.satellites.SatelliteEmitters.from_datetime` where `datetime` parameter is `GPSTime`
+
+        Parameters
+        ----------
+        gps_time : GPSTime
+            time/epoch associated with current receiver states
+        rx_pos : np.array
+            receiver position in ECEF reference frame
+        rx_vel : np.array, optional
+            receiver velocity in ECEF reference frame, by default np.zeros(3)
+        is_only_visible_emitters : bool, optional
+            determines whether returned emitters are only those in view, by default True
+
+        Returns
+        -------
+        dict
+            emitter states for a particular time/epoch
+        """
         datetime = gps_time.as_datetime()
         emitter_states = self.from_datetime(
             datetime=datetime,
@@ -160,11 +156,29 @@ class SatelliteEmitters:
 
     def from_datetimes(
         self,
-        datetimes: datetime,
+        datetimes: list[datetime],
         rx_pos: np.array,
         rx_vel: np.array = None,
         is_only_visible_emitters: bool = True,
-    ):
+    ) -> list[dict]:
+        """computes satellite states and observables for list of given epochs/times and receiver states for each epoch/time
+
+        Parameters
+        ----------
+        datetimes : list[datetime]
+            times associated with receiver states over duration
+        rx_pos : np.array
+            receiver positions in ECEF reference frame over duration of time
+        rx_vel : np.array, optional
+            receiver velocities in ECEF reference frame over duration of time, by default None
+        is_only_visible_emitters : bool, optional
+            determines whether returned emitters are only those in view, by default True
+
+        Returns
+        -------
+        list[dict]
+            emitter states for duration of time
+        """
         laika_duration_states = []
         skyfield_duration_states = []
 
@@ -226,10 +240,12 @@ class SatelliteEmitters:
 
         return self._emitter_states
 
+    # TODO: add from_gps_times method
+
     def _compute_los_states(self, emitter_states: dict, is_only_visible_emitters: bool):
         emitters = defaultdict()
 
-        for emitter_prn, emitter_state in emitter_states.items():
+        for emitter_id, emitter_state in emitter_states.items():
             emitter_pos = emitter_state[0]
             emitter_vel = emitter_state[1]
             emitter_clock_bias = emitter_state[2]
@@ -252,7 +268,7 @@ class SatelliteEmitters:
             )
 
             emitter_state = SatelliteEmitterState(
-                prn=emitter_prn,
+                id=emitter_id,
                 gps_time=self._gps_time,
                 pos=emitter_pos,
                 vel=emitter_vel,
@@ -263,7 +279,7 @@ class SatelliteEmitters:
                 az=emitter_az,
                 el=emitter_el,
             )
-            emitters[emitter_prn] = emitter_state
+            emitters[emitter_id] = emitter_state
 
         return emitters
 
@@ -387,14 +403,3 @@ class SatelliteEmitters:
             output_dict[emitter_name] = state
 
         return output_dict
-
-
-class SatelliteEmitterSignalFactory:
-    def __init__(self):
-        pass
-
-    def get_signal_properties(signal_type: str):
-        signal_type = "".join([i for i in signal_type if i.isalnum()]).casefold()
-        match signal_type:
-            case "gpsl1ca":
-                return gnss.GPS_L1CA
