@@ -189,8 +189,6 @@ class SatelliteEmitterVisualizer:
         self._pl.add_legend(bcolor=None, face=None, size=(0.15, 0.15))
 
     def add_text(self, **kwargs):
-        # if hasattr(self, "_text"):
-        #     self._pl.remove_actor(self._text)
         self._text = self._pl.add_text(**kwargs)
 
     def show(self, **kwargs):
