@@ -6,7 +6,7 @@ authors = ["Tanner Koza <kozatanner@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.9,<3.12"
 numpy = "^1.24.3"
 pandas = "^2.0.1"
 matplotlib = "^3.7.1"
@@ -32,6 +32,8 @@ skyfield = "^1.46"
 codon-jit = "^0.1.7"
 numba = "^0.57.1"
 pyfftw = "^0.13.1"
+astropy = "^5.3.3"
+pyautogui = "^0.9.54"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
