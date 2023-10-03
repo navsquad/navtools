@@ -9,6 +9,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from skyfield.api import load
 from skyfield.framelib import itrs
+from scipy.io import savemat
 
 from laika import AstroDog
 from laika.gps_time import GPSTime
@@ -19,7 +20,7 @@ from navtools.emitters.tools import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass()
 class SatelliteEmitterState:
     """dataclass that contains states for satellite emitters produced by :class:`navtools.emitters.satellites.SatelliteEmitters`"""
 
@@ -244,6 +245,41 @@ class SatelliteEmitters:
         return self._emitter_states
 
     # TODO: add from_gps_times method
+
+    def savemat(self, file_name: str, **kwargs):
+        print(f"saving emitter states to {file_name}...")
+
+        if isinstance(self._emitter_states, list):
+            for idx, epoch in enumerate(self._emitter_states):
+                self._emitter_states[idx] = self._format_mat_data(epoch)
+
+        else:
+            self._emitter_states = self._format_mat_data(self._emitter_states)
+
+        savemat(
+            file_name=file_name,
+            mdict={"emitters": self._emitter_states},
+            do_compression=True,
+            **kwargs,
+        )
+
+        print(f"{file_name} has been saved!")
+
+    @staticmethod
+    def _format_mat_data(epoch):
+        new_epoch = {}
+        for emitter_name, emitter_state in epoch.items():
+            if not emitter_name.isalnum():
+                new_key = "".join(filter(str.isalnum, emitter_name))
+            else:
+                new_key = emitter_name
+
+            new_epoch[new_key] = epoch[emitter_name]
+            new_epoch[new_key].datetime = emitter_state.datetime.strftime(
+                format="%Y-%m-%d %H:%M:%S"
+            )
+
+        return new_epoch
 
     def _compute_los_states(self, emitter_states: dict, is_only_visible_emitters: bool):
         emitters = defaultdict()
