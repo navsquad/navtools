@@ -25,6 +25,7 @@ class SatelliteEmitterState:
 
     id: str
     gps_time: GPSTime
+    datetime: datetime
     pos: float
     vel: float
     clock_bias: float
@@ -92,6 +93,7 @@ class SatelliteEmitters:
             emitter states for a particular time/epoch
         """
         emitter_states = {}
+        self._time = datetime
         self._gps_time = GPSTime.from_datetime(datetime=datetime)
         self._rx_pos = rx_pos
         self._rx_vel = rx_vel
@@ -228,6 +230,7 @@ class SatelliteEmitters:
             desc="computing line-of-sight states",
             total=len(datetimes),
         ):
+            self._time = datetime
             self._gps_time = GPSTime.from_datetime(datetime=datetime)
             self._rx_pos = pos
             self._rx_vel = vel
@@ -270,6 +273,7 @@ class SatelliteEmitters:
             emitter_state = SatelliteEmitterState(
                 id=emitter_id,
                 gps_time=self._gps_time,
+                datetime=self._time,
                 pos=emitter_pos,
                 vel=emitter_vel,
                 clock_bias=emitter_clock_bias,
@@ -380,26 +384,26 @@ class SatelliteEmitters:
             (emitter.name, emitter.at(times).frame_xyz_and_velocity(itrs))
             for emitter in self._skyfield_satellites
         ]
-        epoch_template = {
-            key: None for key in list(zip(*ecef_emitters))[0]
-        }  # slightly faster than defaultdict
 
-        for epoch in tqdm(range(len(times)), desc=skyfield_ex_desc):
-            emitters_epoch = self._extract_skyfield_states(
+        n_times = range(len(times))
+        emitters = [
+            self._extract_skyfield_states(
                 ecef_emitters=ecef_emitters,
-                output_dict=epoch_template,
                 epoch=epoch,
             )
-            emitters.append(emitters_epoch)
+            for epoch in tqdm(n_times, desc=skyfield_ex_desc)
+        ]
 
         return emitters
 
     @staticmethod
-    def _extract_skyfield_states(ecef_emitters: list, output_dict: dict, epoch: int):
+    def _extract_skyfield_states(ecef_emitters: list, epoch: int):
+        emitters_epoch = defaultdict()
+
         for emitter_name, emitter_state in ecef_emitters:
             pos = np.array(emitter_state[0].m[:, epoch])
             vel = np.array(emitter_state[1].m_per_s[:, epoch])
             state = [pos, vel, 0, 0]
-            output_dict[emitter_name] = state
+            emitters_epoch[emitter_name] = state
 
-        return output_dict
+        return emitters_epoch
