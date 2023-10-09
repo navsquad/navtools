@@ -146,12 +146,12 @@ def compute_carrier_to_noise(
     CASCADED_NOISE = 2  # dB-Hz
     BL_AND_QUANTIZATION_NOISE = 1  # dB-Hz
 
+    eirp = transmit_power + antenna_gain
     thermal_noise = 10 * np.log10(BOLTZMANN_CONSTANT * temperature)  # in dBW
     wavelength = SPEED_OF_LIGHT / fcarrier
 
     cn0 = (
-        transmit_power
-        + antenna_gain
+        eirp
         - 20 * np.log10(4 * np.pi * range / wavelength)
         - thermal_noise
         - CASCADED_NOISE
