@@ -1,8 +1,7 @@
 import numpy as np
 
 from numba import njit
-from ..conversions import ecef2lla, ecef2enu
-from navtools.constants import SPEED_OF_LIGHT, BOLTZMANN_CONSTANT
+from navtools.conversions import ecef2lla, ecef2enu
 
 
 @njit
@@ -112,64 +111,3 @@ def compute_range_rate(
     range_rate = np.sum(rx_vel_rel_sat * unit_vector)
 
     return range_rate
-
-
-@njit
-def compute_carrier_to_noise(
-    range: float,
-    transmit_power: float,
-    antenna_gain: float,
-    fcarrier: float,
-    temperature: float = 290,
-):
-    """computes carrier-to-noise density from free space path loss (derived from Friis equation)
-
-    Parameters
-    ----------
-    range : float
-        range to emitter [m]
-    transmit_power : float
-        transmit power [dBW]
-    antenna_gain : float
-        iostropic tx antenna gain [dBi]
-    fcarrier : float
-        signal carrier frequency [Hz]
-    temperature : float
-        ambient temperature [K]
-
-
-    Returns
-    -------
-    _type_
-        carrier-to-noise ratio
-    """
-    CASCADED_NOISE = 2  # dB-Hz
-    BL_AND_QUANTIZATION_NOISE = 1  # dB-Hz
-
-    eirp = transmit_power + antenna_gain
-    thermal_noise = 10 * np.log10(BOLTZMANN_CONSTANT * temperature)  # in dBW
-    wavelength = SPEED_OF_LIGHT / fcarrier
-
-    cn0 = (
-        eirp
-        - 20 * np.log10(4 * np.pi * range / wavelength)
-        - thermal_noise
-        - CASCADED_NOISE
-        - BL_AND_QUANTIZATION_NOISE
-    )
-
-    return cn0
-
-
-@njit
-def cn02snr(cn0: float, front_end_bw: float = 4e6, noise_figure: float = 0.0):
-    snr = cn0 - 10 * np.log10(front_end_bw) - noise_figure  # dB
-
-    return snr
-
-
-@njit
-def snr2cn0(snr: float, front_end_bw: float = 4e6, noise_figure: float = 0.0):
-    cn0 = snr + 10 * np.log10(front_end_bw) + noise_figure
-
-    return cn0

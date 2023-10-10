@@ -5,7 +5,7 @@ from navtools.signals import gps
 
 @dataclass(frozen=True)
 class PhaseShiftKeyedSignal:
-    fcarr: float
+    fcarrier: float
 
     fbit_data: float
     msg_length_data: int

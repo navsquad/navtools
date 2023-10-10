@@ -4,6 +4,7 @@ from navtools.signals.tools import PhaseShiftKeyedSignal
 
 ### GPS L1-C/A ###
 
+
 # prn generators
 def gps_l1ca_prn_generator(prn: int):
     lsfr_taps = [
@@ -72,11 +73,15 @@ def gps_l1ca_prn_generator(prn: int):
     return g
 
 
+# def lfsr(length: int =10, taps: list = [3, 10]):
+#     sequence_length = 2**length - 1
 
+#     m_sequence = np.empty(sequence_length)
+#     for _ in range(sequence_length):
 
 
 GPS_L1CA = PhaseShiftKeyedSignal(
-    fcarr=1575.42e6,
+    fcarrier=1575.42e6,
     fbit_data=50.0,
     msg_length_data=1500,
     fchip_data=1.023e6,
