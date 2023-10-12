@@ -11,10 +11,6 @@ from pyvista.examples.planets import load_earth
 
 from navtools.constants import WGS84_RADIUS
 
-root = tkinter.Tk()
-SCREEN_WIDTH = root.winfo_screenwidth()
-SCREEN_HEIGHT = root.winfo_screenheight()
-
 
 class SatelliteEmitterVisualizer:
     def __init__(
@@ -31,8 +27,11 @@ class SatelliteEmitterVisualizer:
         else:
             self._pl = pv.Plotter(off_screen=self._off_screen)
 
-        self._pl.window_size = int(window_scale * float(SCREEN_WIDTH)), int(
-            window_scale * float(SCREEN_HEIGHT)
+        root = tkinter.Tk()
+        width = root.winfo_screenwidth()
+        height = root.winfo_screenheight()
+        self._pl.window_size = int(window_scale * float(width)), int(
+            window_scale * float(height)
         )
 
         self._setup_earth_object()

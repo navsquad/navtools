@@ -1,23 +1,24 @@
 import numpy as np
 
 from datetime import datetime
-from navtools.emitters.satellites import SatelliteEmitters
-from navtools.simulation.error_models import (
+from navtools.emitters.satellite import SatelliteEmitters
+from navtools.error_models.error_models import (
     compute_carrier_to_noise,
     get_ionosphere_delay_model,
     get_troposphere_delay_model,
     IonosphereModelParameters,
     TroposphereModelParameters,
 )
-from navtools.signals.tools import get_signal_properties
+
+# from navtools.signals.tools import get_signal_properties
 from laika import AstroDog
 from tqdm import tqdm
 
 # satellite parameters
-CONSTELLATIONS = "gps"
+CONSTELLATIONS = "iridium"
 LEAP_SECONDS = 18  # current gps leap seconds
 INITIAL_TIME = datetime(2023, 9, 22, 18, 50, LEAP_SECONDS)
-TRANSMIT_POWER = 44.8  # [W]
+TRANSMIT_POWER = 50  # [W]
 TRANSMIT_ANTENNA_GAIN = 12  # [dBi]
 
 # receiver parameters
@@ -67,15 +68,14 @@ troposphere = get_troposphere_delay_model(model_type="saastamoinen")
 iono_delay = []
 tropo_delay = []
 
-for _ in tqdm(range(3600)):
-    for pos, az, el in zip(positions, azs, els):
-        tparams.el = el
-        iparams.emitter_pos = pos
-        iparams.el = el
-        iparams.az = az
+for pos, az, el in zip(positions, azs, els):
+    tparams.el = el
+    iparams.emitter_pos = pos
+    iparams.el = el
+    iparams.az = az
 
-        iono_delay.append(ionosphere.get_delay(params=iparams))
-        tropo_delay.append(troposphere.get_delay(params=tparams))
+    iono_delay.append(ionosphere.get_delay(params=iparams))
+    tropo_delay.append(troposphere.get_delay(params=tparams))
 
-# print(f"ionosphere channel delays: {iono_delay}")
-# print(f"troposphere channel delays: {tropo_delay}")
+print(f"ionosphere channel delays: {iono_delay}")
+print(f"troposphere channel delays: {tropo_delay}")

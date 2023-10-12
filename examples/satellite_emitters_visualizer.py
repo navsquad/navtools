@@ -2,8 +2,8 @@ import numpy as np
 from datetime import datetime, timedelta
 from tqdm import tqdm
 
-from navtools.emitters.satellites import SatelliteEmitters
-from navtools.plot.simulation import SatelliteEmitterVisualizer
+from navtools.emitters.satellite import SatelliteEmitters
+from navtools.plot.satellite import SatelliteEmitterVisualizer
 
 LEAP_SECONDS = 18
 INITIAL_TIME = datetime(2023, 10, 1, 18, 40, LEAP_SECONDS)

@@ -4,7 +4,7 @@ from collections import namedtuple
 
 from navtools.constants import WGS84_RADIUS, WGS84_ECCENTRICITY
 
-### reference frames ###
+# Reference Frames
 ECEF = namedtuple("ECEF", ["x", "y", "z"])
 ENU = namedtuple("ENU", ["east", "north", "up"])
 GEODETIC = namedtuple("GEODETIC", ["lat", "lon", "alt"])
@@ -104,7 +104,7 @@ def enu2ecefv(
     return ECEF(x=ecef[0], y=ecef[1], z=ecef[2])
 
 
-### signals ###
+# Signals
 @njit
 def cn02snr(cn0: float, front_end_bw: float = 4e6, noise_figure: float = 0.0):
     snr = cn0 - 10 * np.log10(front_end_bw) - noise_figure  # dB

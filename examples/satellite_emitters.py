@@ -1,7 +1,7 @@
 import numpy as np
 
 from datetime import datetime, timedelta
-from navtools.emitters.satellites import SatelliteEmitters, GPSTime
+from navtools.emitters.satellite import SatelliteEmitters, GPSTime
 
 # user-defined parameters
 CONSTELLATIONS = ["gps", "galileo", "glonass", "iridium", "orbcomm"]
