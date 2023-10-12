@@ -10,17 +10,19 @@ from datetime import datetime, timezone
 from skyfield.api import load
 from skyfield.framelib import itrs
 from scipy.io import savemat
+from datetime import datetime
+from collections import defaultdict
 
 from laika import AstroDog
 from laika.gps_time import GPSTime
-from navtools.emitters.tools import (
+from navtools.common import (
     compute_visibility_status,
     compute_range_and_unit_vector,
     compute_range_rate,
 )
 
 
-@dataclass()
+@dataclass
 class SatelliteEmitterState:
     """dataclass that contains states for satellite emitters produced by :class:`navtools.emitters.satellites.SatelliteEmitters`"""
 

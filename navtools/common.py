@@ -1,6 +1,6 @@
 import numpy as np
-
 from numba import njit
+
 from navtools.conversions import ecef2lla, ecef2enu
 
 

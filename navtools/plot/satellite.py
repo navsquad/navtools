@@ -1,16 +1,19 @@
 import pyvista as pv
 import numpy as np
-import pyautogui
-
 import pymap3d as pm
+import tkinter
 
+from astropy.time import Time
 from datetime import datetime
 from collections import defaultdict
 from pyvista.examples import load_globe_texture, download_cubemap_space_16k
 from pyvista.examples.planets import load_earth
-from astropy.time import Time
 
 from navtools.constants import WGS84_RADIUS
+
+root = tkinter.Tk()
+SCREEN_WIDTH = root.winfo_screenwidth()
+SCREEN_HEIGHT = root.winfo_screenheight()
 
 
 class SatelliteEmitterVisualizer:
@@ -28,9 +31,8 @@ class SatelliteEmitterVisualizer:
         else:
             self._pl = pv.Plotter(off_screen=self._off_screen)
 
-        width, height = pyautogui.size()
-        self._pl.window_size = int(window_scale * float(width)), int(
-            window_scale * float(height)
+        self._pl.window_size = int(window_scale * float(SCREEN_WIDTH)), int(
+            window_scale * float(SCREEN_HEIGHT)
         )
 
         self._setup_earth_object()

@@ -1,7 +1,5 @@
 import numpy as np
 
-from numba import njit
-
 
 def parcorr(
     sequence: np.array, baseline_sequence: np.array, fft=np.fft.fft, ifft=np.fft.ifft
@@ -39,26 +37,6 @@ def pcps(
     baseband_fft=np.fft.fft,
     ifft=np.fft.ifft,
 ) -> np.array:
-    """_summary_
-
-    Parameters
-    ----------
-    code_replicas : np.array
-        _description_
-    baseband_signals : np.array
-        _description_
-    code_fft : _type_, optional
-        _description_, by default np.fft.fft
-    baseband_fft : _type_, optional
-        _description_, by default np.fft.fft
-    ifft : _type_, optional
-        _description_, by default np.fft.ifft
-
-    Returns
-    -------
-    np.array
-        _description_
-    """
     code_replica_cffts = (
         np.conj(code_fft(code_replica)) for code_replica in code_replicas
     )
