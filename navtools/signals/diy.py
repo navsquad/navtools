@@ -23,6 +23,8 @@ def freedom_prn_generator(prn):
 
 ### signals ###
 FREEDOM = PhaseShiftKeyedSignal(
+    transmit_power=25.5,  # minimum EIRP of Iridium-NEXT @ 90 degrees elevation is 38.5 dBW
+    transmit_antenna_gain=13,
     fcarrier=1776.74e6,
     fbit_data=50.0,
     msg_length_data=1500,

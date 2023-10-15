@@ -2,7 +2,13 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class PhaseShiftKeyedSignal:
+class SatelliteSignal:
+    transmit_power: float  # [W]
+    transmit_antenna_gain: float  # [dBi]
+
+
+@dataclass(frozen=True)
+class PhaseShiftKeyedSignal(SatelliteSignal):
     fcarrier: float
 
     fbit_data: float
