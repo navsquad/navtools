@@ -36,6 +36,7 @@ astropy = "^5.3.3"
 pyautogui = "^0.9.54"
 pyvista = "^0.42.3"
 imageio = "^2.31.5"
+cartopy = "^0.22.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
