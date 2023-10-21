@@ -84,3 +84,33 @@ def carrier_replica(
     replica = np.exp(2 * np.pi * -1j * phases)
 
     return replica
+
+
+def carrier(
+    fcarrier: float,
+    fsamp: float,
+    duration: float,
+    fcarrier_rate: float = 0.0,
+    cn0: float = None,
+):
+    time = np.arange(0, fsamp * duration) * (1 / fsamp)
+    phases = fcarrier * time + 0.5 * fcarrier_rate * time**2
+    carrier = np.exp(2 * np.pi * 1j * phases)
+
+    return carrier
+
+
+def apply_cn0(samples: np.array, cn0: float, fsamp: float):
+    cn0 = 10 ** (cn0 / 10)  # linear ratio
+
+    if np.iscomplex(samples):
+        A = np.sqrt((2 * cn0) / fsamp)
+        noise = np.random.randn(samples.size).astype(samples.dtype) / np.sqrt(2)
+
+    else:
+        A = 2 * np.sqrt(cn0 / fsamp)
+        noise = np.random.randn(samples.size).astype(samples.dtype)
+
+    noisy_samples = A * samples + noise
+
+    return noisy_samples
