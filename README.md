@@ -40,7 +40,7 @@ We are still very much in development as features are being added on an as-neede
 
 ***navtools.py*** is fairly easy to get installed (if not submit an issue!). Currently, the package only exists in this repo as we are "pre-release". However, there are plans to distribute wheels on PyPI in the future. For now, read through the following instructions for getting started.
 
-### Prerequisites
+## Prerequisites
 
 Python **3.9-3.12** is required. We are currently working to make the package usable with Python 3.9 or greater.
 
