@@ -77,7 +77,9 @@ def upsample_sequence(
     return samples
 
 
-def carrier_replica(fcarrier: float, nsamples: int, fsamp: float, start_phase: float):
+def carrier_replica(
+    fcarrier: float, nsamples: int, fsamp: float, start_phase: float = 0.0
+):
     phases = np.arange(0, nsamples) * fcarrier * (1 / fsamp) + start_phase  # [cycles]
     replica = np.exp(2 * np.pi * -1j * phases)
 
