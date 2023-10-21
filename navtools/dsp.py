@@ -25,7 +25,7 @@ def parcorr(
 
     correlation_fft = fft(sequence) * np.conj(fft(baseline_sequence))
     correlation_ifft = ifft(correlation_fft)
-    correlation = np.abs(correlation_ifft) ** 2
+    correlation = np.abs(correlation_ifft) ** 2  # correlation power
 
     return correlation
 
@@ -63,37 +63,22 @@ def pcps(
 
 
 def upsample_sequence(
-    sequence: np.array, fsamp, fchip, upsample_size=None, rem_phase=0, chip_shift=0
+    sequence: np.array,
+    nsamples: int,
+    fsamp: float,
+    fchip: float,
+    phase_shift: float = 0.0,
+    start_phase: float = 0.0,
 ):
-    # TODO: add comments to make clear
-    samples_per_chip = fsamp / fchip
-    chips_per_sample = 1 / samples_per_chip
-    chip_phase = rem_phase + chip_shift
-    samples_per_code = np.ceil((sequence.size - chip_phase) * samples_per_chip).astype(
-        int
-    )
+    start_phase = phase_shift + start_phase
+    phases = np.arange(0, nsamples) * (fchip / fsamp) + start_phase  # [chips]
+    samples = sequence[phases.astype(int) % sequence.size]
 
-    if upsample_size is None:
-        upsample_size = samples_per_code  # samples per code period
-    multiple = upsample_size / samples_per_code
-    sequence = repeat_sequence(sequence=sequence, multiple=multiple)
-
-    extended_code = np.concatenate([[sequence[-1]], sequence, [sequence[0]]])
-
-    fractional_chip_index = np.arange(0, upsample_size) * chips_per_sample + chip_phase
-    whole_chip_index = np.mod(np.ceil(fractional_chip_index), sequence.size).astype(int)
-
-    upsampled_code = extended_code[
-        np.where(whole_chip_index == 0, sequence.size, whole_chip_index)
-    ]
-    rem_phase = fractional_chip_index[-1] + chips_per_sample - sequence.size
-
-    return upsampled_code, rem_phase
+    return samples
 
 
-def repeat_sequence(sequence: np.array, multiple: float):
-    integer_sequence_multiples = np.tile(sequence, np.fix(multiple).astype(int))
-    fractional_index = np.round(sequence.size * np.mod(multiple, 1)).astype(int)
-    fractional_sequence = sequence[:fractional_index]
+def carrier_replica(fcarrier: float, nsamples: int, fsamp: float, start_phase: float):
+    phases = np.arange(0, nsamples) * fcarrier * (1 / fsamp) + start_phase  # [cycles]
+    replica = np.exp(2 * np.pi * -1j * phases)
 
-    return np.concatenate([integer_sequence_multiples, fractional_sequence])
+    return replica
