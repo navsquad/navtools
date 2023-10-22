@@ -11,7 +11,6 @@ from skyfield.api import load
 from skyfield.framelib import itrs
 from scipy.io import savemat
 from datetime import datetime
-from collections import defaultdict
 
 from laika import AstroDog
 from laika.gps_time import GPSTime
@@ -29,6 +28,7 @@ class SatelliteEmitterState:
     id: str
     gps_time: GPSTime
     datetime: datetime
+    constellation: str
     pos: float
     vel: float
     clock_bias: float
@@ -197,7 +197,7 @@ class SatelliteEmitters:
             rx_vel = np.zeros_like(rx_pos)
 
         if self._laika_constellations:
-            laika_desc = f"extracting {self._laika_string} states"
+            laika_desc = f"extracting {self._laika_string} emitter states"
             laika_duration_states = [
                 self._dog.get_all_sat_info(time=gps_time)
                 for gps_time in tqdm(gps_times, desc=laika_desc)
@@ -301,6 +301,16 @@ class SatelliteEmitters:
             if is_only_visible_emitters and not is_visible:
                 continue
 
+            symbol = "".join([i for i in emitter_id if i.isalpha()])
+            if symbol in self._laika_constellations.values():
+                symbol_index = list(self._laika_constellations.values()).index(symbol)
+                constellation = list(self._laika_constellations.keys())[symbol_index]
+            else:
+                symbol_index = list(self._skyfield_constellations.values()).index(
+                    symbol
+                )
+                constellation = list(self._skyfield_constellations.keys())[symbol_index]
+
             range, unit_vector = compute_range_and_unit_vector(
                 rx_pos=self._rx_pos, emitter_pos=emitter_pos
             )
@@ -312,6 +322,7 @@ class SatelliteEmitters:
                 id=emitter_id,
                 gps_time=self._gps_time,
                 datetime=self._time,
+                constellation=constellation,
                 pos=emitter_pos,
                 vel=emitter_vel,
                 clock_bias=emitter_clock_bias,
@@ -329,21 +340,27 @@ class SatelliteEmitters:
         if isinstance(constellations, str):
             constellations = constellations.split()
 
-        GNSS = ["gps", "glonass", "galileo", "beidou", "qznss"]
-        LEO = ["iridium", "iridium-NEXT", "orbcomm", "globalstar", "oneweb", "starlink"]
+        GNSS = {"gps": "G", "glonass": "R", "galileo": "E", "beidou": "C", "qznss": "J"}
+        LEO = {
+            "iridium-NEXT": "IRIDIUM",
+            "orbcomm": "ORBCOMM",
+            "globalstar": "GLOBALSTAR",
+            "oneweb": "ONEWEB",
+            "starlink": "STARLINK",
+        }
 
-        self._laika_constellations = [
-            gnss
-            for gnss in GNSS
+        self._laika_constellations = {
+            gnss: symbol
+            for gnss, symbol in GNSS.items()
             for constellation in constellations
             if constellation.casefold() == gnss.casefold()
-        ]
-        self._skyfield_constellations = [
-            leo
-            for leo in LEO
+        }
+        self._skyfield_constellations = {
+            leo: symbol
+            for leo, symbol in LEO.items()
             for constellation in constellations
             if constellation.casefold() == leo.casefold()
-        ]
+        }
 
         if self._laika_constellations:
             self._laika_string = ", ".join(
@@ -416,7 +433,7 @@ class SatelliteEmitters:
 
     def _get_multiple_epoch_skyfield_states(self, times):
         emitters = []
-        skyfield_ex_desc = f"extracting {self._skyfield_string} states"
+        skyfield_ex_desc = f"extracting {self._skyfield_string} emitter states"
 
         ecef_emitters = [
             (emitter.name, emitter.at(times).frame_xyz_and_velocity(itrs))
@@ -441,7 +458,7 @@ class SatelliteEmitters:
         for emitter_name, emitter_state in ecef_emitters:
             pos = np.array(emitter_state[0].m[:, epoch])
             vel = np.array(emitter_state[1].m_per_s[:, epoch])
-            state = [pos, vel, 0, 0]
+            state = [pos, vel, 0.0, 0.0]
             emitters_epoch[emitter_name] = state
 
         return emitters_epoch
