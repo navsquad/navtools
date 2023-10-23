@@ -34,7 +34,7 @@
 
 ***navtools.py*** was created to provide a diverse foundation of tools that can be used to facilitate positioning, navigation, and timing (PNT) research in Python. 
 
-We are still very much in development as features are being added on an as-needed basis. Feel free to request new features as an [issue](https://github.com/tannerkoza/navtools.py/issues/new) or see [Contributing](#✍️-contributing) for instructions on adding your own tools.
+We are still very much in development as features are being added on an as-needed basis. Feel free to request new features as an [issue](https://github.com/tannerkoza/navtools.py/issues/new) or see [Contributing](#contributing) for instructions on adding your own tools.
 
 ## 🏁 Getting Started <a name = "getting-started"></a>
 
