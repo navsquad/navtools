@@ -74,7 +74,7 @@ def gps_l1ca_prn_generator(prn: int):
 
 ### signals ###
 L1CA = PhaseShiftKeyedSignal(
-    transmit_power=25.6,
+    transmit_power=16.5,
     transmit_antenna_gain=13,
     fcarrier=1575.42e6,
     fbit_data=50.0,
