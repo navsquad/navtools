@@ -70,7 +70,7 @@ def get_clock_allan_variance_values(clock_name: str):
         clock Allan variance values
     """
     CLOCKS = {
-        "lowqualitytxco": LOW_QUALITY_TCXO,
+        "lowqualitytcxo": LOW_QUALITY_TCXO,
         "highqualitytcxo": HIGH_QUALITY_TCXO,
         "ocxo": OCXO,
         "rubidium": RUBIDIUM,

@@ -8,6 +8,7 @@ from numba import njit
 from laika import AstroDog
 from laika.gps_time import GPSTime
 from navtools.conversions import ecef2lla
+from navtools.constants import SPEED_OF_LIGHT
 
 
 ### ionosphere ###
@@ -19,6 +20,8 @@ class IonosphereModelParameters:
     az: float
     el: float
     fcarrier: float
+    alpha: np.array = np.array([2.6768e-08, 4.4914e-09, -3.2658e-07, -5.2153e-07])
+    beta: np.array = np.array([1.3058e05, -1.1203e05, -7.0416e05, -6.4865e06])
 
 
 class IonosphereModel(ABC):
@@ -59,7 +62,62 @@ class KlobucharModel(IonosphereModel):
         super().__init__()
 
     def get_delay(self, params: IonosphereModelParameters):
-        pass  # TODO: implement Klobuchar with default alpha and beta
+        gps_time = GPSTime.from_datetime(datetime=params.time)
+        lla = ecef2lla(x=params.rx_pos[0], y=params.rx_pos[1], z=params.rx_pos[2])
+
+        delay = compute_klobuchar_delay(
+            lat=lla.lat,
+            lon=lla.lon,
+            az=params.az,
+            el=params.el,
+            tow=gps_time.tow,
+            alpha=params.alpha,
+            beta=params.beta,
+        )
+
+        return delay
+
+
+@njit(cache=True)
+def compute_klobuchar_delay(
+    lat: float,
+    lon: float,
+    az: float,
+    el: float,
+    tow: float,
+    alpha: np.array,
+    beta: np.array,
+):
+    psi = 0.0137 / (el / np.pi + 0.11) - 0.022
+    phi = lat / np.pi + psi * np.cos(az)
+
+    if phi > 0.416:
+        phi = 0.416
+    elif phi < -0.416:
+        phi = -0.416
+    lam = lon / np.pi + psi * np.sin(az) / np.cos(phi * np.pi)
+
+    local_tod = 43200.0 * lam + tow
+    local_tod -= np.floor(local_tod / 86400.0) * 86400.0  # [s]
+
+    slant_factor = 1.0 + 16.0 * np.power(0.53 - el / np.pi, 3.0)
+
+    amplitude = alpha[0] + phi * (alpha[1] + phi * (alpha[2] + phi * alpha[3]))
+    period = beta[0] + phi * (beta[1] + phi * (beta[2] + phi * beta[3]))
+    if amplitude < 0.0:
+        amplitude = 0.0
+    if period < 72000.0:
+        period = 72000.0
+
+    phase = 2.0 * np.pi * (local_tod - 50400.0) / period
+
+    multiple = 5e-9
+    if np.abs(phase) < 1.57:
+        multiple += amplitude * (1.0 + phase * phase * (-0.5 + phase * phase / 24.0))
+
+    delay = SPEED_OF_LIGHT * slant_factor * multiple
+
+    return delay
 
 
 ### troposphere ###
