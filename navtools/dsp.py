@@ -91,7 +91,6 @@ def carrier(
     fsamp: float,
     duration: float,
     fcarrier_rate: float = 0.0,
-    cn0: float = None,
 ):
     time = np.arange(0, fsamp * duration) * (1 / fsamp)
     phases = fcarrier * time + 0.5 * fcarrier_rate * time**2
