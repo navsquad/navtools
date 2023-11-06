@@ -1,42 +1,71 @@
 import numpy as np
+from numba import njit
+from typing import Callable, Generator
 
 
 def parcorr(
-    sequence: np.array, baseline_sequence: np.array, fft=np.fft.fft, ifft=np.fft.ifft
+    sequence: np.array,
+    baseline_sequence: np.array,
+    fft: Callable[[np.array], np.array] = np.fft.fft,
+    ifft: Callable[[np.array], np.array] = np.fft.ifft,
 ) -> np.array:
-    """parallel correlation of a sequence with a baseline sequence using fft and ifft of user's choice
+    """performs correlation in parallel
 
     Parameters
     ----------
     sequence : np.array
-        sequence to correlate against (eg. raw signal data)
+        sequence to correlate with
     baseline_sequence : np.array
-        sequence to correlate with (eg. prn replica)
-    fft : _type_, optional
-        fft function, by default np.fft.fft
-    ifft : _type_, optional
-        ifft function, by default np.fft.ifft
+        sequence to correlate against
+    fft : Callable[[np.array], np.array], optional
+        fft function or object, by default np.fft.fft
+    ifft : Callable[[np.array], np.array], optional
+        ifft function or object, by default np.fft.ifft
 
     Returns
     -------
     np.array
-        correlation magnitudes for each index of baseline sequence
+        correlation power
     """
-
     correlation_fft = fft(sequence) * np.conj(fft(baseline_sequence))
     correlation_ifft = ifft(correlation_fft)
-    correlation = np.abs(correlation_ifft) ** 2  # correlation power
+    correlation = correlation_ifft**2  # correlation power
 
     return correlation
 
 
 def pcps(
-    code_replicas: np.array,
     baseband_signals: np.array,
-    code_fft=np.fft.fft,
-    baseband_fft=np.fft.fft,
-    ifft=np.fft.ifft,
-) -> np.array:
+    code_replicas: np.array,
+    baseband_fft: Callable[[np.array], np.array] = np.fft.fft,
+    code_fft: Callable[[np.array], np.array] = np.fft.fft,
+    ifft: Callable[[np.array], np.array] = np.fft.ifft,
+) -> Generator[np.array, None, None]:
+    """parallel code phase search across code replicas
+
+    Parameters
+    ----------
+    baseband_signals : np.array
+        baseband signal to correlate with
+    code_replicas : np.array
+        upsampled code replicas to correlate against
+    baseband_fft : Callable[[np.array], np.array], optional
+        fft function or object, by default np.fft.fft
+    code_fft : Callable[[np.array], np.array], optional
+       fft function or object, by default np.fft.fft
+    ifft : Callable[[np.array], np.array], optional
+        ifft function or object, by default np.fft.ifft
+
+    Returns
+    -------
+    np.array
+        correlation planes
+
+    Yields
+    ------
+    Generator[np.array, None, None]
+        correlation plane for each code replica and baseband signal
+    """
     code_replica_cffts = (
         np.conj(code_fft(code_replica)) for code_replica in code_replicas
     )
@@ -50,12 +79,12 @@ def pcps(
         for code_replica_cfft in code_replica_cffts
     )
 
-    def pcps_parcorr(baseband_signals_fft: np.array, code_replica_cfft: np.array):
-        """parallel correlation (see :func:`navtools.dsp.parcorr`) where parameters are outputs of different FFTs"""
-
+    def pcps_parcorr(
+        baseband_signals_fft: np.array, code_replica_cfft: np.array
+    ) -> np.array:
         correlation_fft = baseband_signals_fft * code_replica_cfft
         correlation_ifft = ifft(correlation_fft)
-        correlation = np.abs(correlation_ifft) ** 2
+        correlation = correlation_ifft**2
 
         return correlation
 
@@ -69,7 +98,29 @@ def upsample_sequence(
     fchip: float,
     phase_shift: float = 0.0,
     start_phase: float = 0.0,
-):
+) -> np.array:
+    """upsample and phase shift sequence
+
+    Parameters
+    ----------
+    sequence : np.array
+        sequence to upsample
+    nsamples : int
+        # to upsample to
+    fsamp : float
+        sampling frequency [Hz]
+    fchip : float
+        chipping frequency of sequence
+    phase_shift : float, optional
+        phase basis for sequence if continually upsampling, by default 0.0
+    start_phase : float, optional
+        fractional starting phase that is calculated when continually upsampling, by default 0.0
+
+    Returns
+    -------
+    np.array
+        upsampled and phase shifted sequence
+    """
     start_phase = phase_shift + start_phase
     phases = np.arange(0, nsamples) * (fchip / fsamp) + start_phase  # [chips]
     samples = sequence[phases.astype(int) % sequence.size]
@@ -77,21 +128,59 @@ def upsample_sequence(
     return samples
 
 
+@njit(cache=True)
 def carrier_replica(
     fcarrier: float, nsamples: int, fsamp: float, start_phase: float = 0.0
-):
+) -> np.array:
+    """generates carrier replica used to wipe off raw signal samples
+
+    Parameters
+    ----------
+    fcarrier : float
+        carrier frequency [Hz]
+    nsamples : int
+        # to upsample to
+    fsamp : float
+        sampling frequency [Hz]
+    start_phase : float, optional
+        fractional starting phase that is calculated when continually upsampling, by default 0.0
+
+    Returns
+    -------
+    np.array
+        carrier replica
+    """
     phases = np.arange(0, nsamples) * fcarrier * (1 / fsamp) + start_phase  # [cycles]
     replica = np.exp(2 * np.pi * -1j * phases)
 
     return replica
 
 
+@njit(cache=True)
 def carrier(
     fcarrier: float,
     fsamp: float,
     duration: float,
     fcarrier_rate: float = 0.0,
-):
+) -> np.array:
+    """generates carrier signal for modulation
+
+    Parameters
+    ----------
+    fcarrier : float
+        carrier frequency [Hz]
+    fsamp : float
+        sampling frequency [Hz]
+    duration : float
+        duration of signal [s]
+    fcarrier_rate : float, optional
+        Doppler rate of signal [Hz/s], by default 0.0
+
+    Returns
+    -------
+    np.array
+        carrier signal
+    """
     time = np.arange(0, fsamp * duration) * (1 / fsamp)
     phases = fcarrier * time + 0.5 * fcarrier_rate * time**2
     carrier = np.exp(2 * np.pi * 1j * phases)
@@ -99,7 +188,24 @@ def carrier(
     return carrier
 
 
-def apply_cn0(samples: np.array, cn0: float, fsamp: float):
+@njit(cache=True)
+def apply_carrier_to_noise(samples: np.array, cn0: float, fsamp: float) -> np.array:
+    """applies corresponding noise and amplitude to signal samples based on C/N0
+
+    Parameters
+    ----------
+    samples : np.array
+        samples to corrupt
+    cn0 : float
+        carrier-to-noise density ratio [dB-Hz]
+    fsamp : float
+        sampling frequency [Hz]
+
+    Returns
+    -------
+    np.array
+        corrupted samples
+    """
     cn0 = 10 ** (cn0 / 10)  # linear ratio
 
     if np.iscomplex(samples):
