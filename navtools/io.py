@@ -1,15 +1,7 @@
-import re
-import os
-import readline
-import numpy as np
-import pandas as pd
-import pathlib as plib
-from bagpy import bagreader
-from tqdm import tqdm
 import numpy as np
 
 
-class SignalFile:
+class SignalFile:  # TODO: correct handling of real-valued data
     def __init__(self, file_path, dtype: str, is_complex: bool):
         self._fid = open(file_path, "rb+")
         self._dtype = np.dtype(dtype)
@@ -57,31 +49,21 @@ class SignalFile:
         return samples
 
 
-def parse_bag_topics(bag_file_path: str, topics: list):
-    bag_file_path = plib.Path(bag_file_path)
-    b = bagreader(bag_file_path)
-    output_files = []
-    DESCRIPTION = "Parsing  %s ... " % (bag_file_path.name)
+# def parse_bag_topics(bag_file_path: str, topics: list):
+#     bag_file_path = pl.Path(bag_file_path)
+#     b = bagreader(bag_file_path)
+#     output_files = []
+#     DESCRIPTION = "Parsing  %s ... " % (bag_file_path.name)
 
-    for topic in tqdm(topics, desc=DESCRIPTION):
-        topic_data = b.message_by_topic(topic)
-        output_files.append(topic_data)
-
-
-def get_parsed_topic(bag_dir_file_path: str, topic: str):
-    modified_topic = topic.replace("/", "", 1).replace("/", "-")
-    csv_file_path = plib.Path(bag_dir_file_path) / modified_topic
-
-    topic_data = pd.read_csv(csv_file_path.with_suffix(".csv"))
-
-    return topic_data
+#     for topic in tqdm(topics, desc=DESCRIPTION):
+#         topic_data = b.message_by_topic(topic)
+#         output_files.append(topic_data)
 
 
-def tab_complete_input(directory_path, prompt_string="Provide Desired File: "):
-    os.chdir(directory_path)
+# def get_parsed_topic(bag_dir_file_path: str, topic: str):
+#     modified_topic = topic.replace("/", "", 1).replace("/", "-")
+#     csv_file_path = pl.Path(bag_dir_file_path) / modified_topic
 
-    readline.set_completer_delims(" \t\n=")
-    readline.parse_and_bind("tab: complete")
+#     topic_data = pd.read_csv(csv_file_path.with_suffix(".csv"))
 
-    file_path = input(prompt_string)
-    return file_path
+#     return topic_data

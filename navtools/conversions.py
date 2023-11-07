@@ -10,7 +10,7 @@ ENU = namedtuple("ENU", ["east", "north", "up"])
 GEODETIC = namedtuple("GEODETIC", ["lat", "lon", "alt"])
 
 
-@njit
+@njit(cache=True)
 def ecef2lla(x: np.array, y: np.array, z: np.array) -> GEODETIC:
     # TODO: clean this up a little
     p = (x**2 + y**2) / WGS84_RADIUS**2
@@ -32,7 +32,7 @@ def ecef2lla(x: np.array, y: np.array, z: np.array) -> GEODETIC:
     return GEODETIC(lat=lat, lon=lon, alt=alt)
 
 
-@njit
+@njit(cache=True)
 def lla2ecef(lat: np.array, lon: np.array, alt: np.array, degrees=True) -> ECEF:
     if degrees:
         lat = np.radians(lat)
@@ -48,7 +48,7 @@ def lla2ecef(lat: np.array, lon: np.array, alt: np.array, degrees=True) -> ECEF:
     return ECEF(x=x, y=y, z=z)
 
 
-@njit
+@njit(cache=True)
 def ecef2enu(
     x: np.array,
     y: np.array,
@@ -81,7 +81,7 @@ def ecef2enu(
     return ENU(east=ned[1], north=ned[0], up=-ned[2])
 
 
-@njit
+@njit(cache=True)
 def enu2ecefv(
     east: np.array, north: np.array, up: np.array, lat0, lon0, degrees=True
 ) -> ECEF:
@@ -105,14 +105,14 @@ def enu2ecefv(
 
 
 # Signals
-@njit
+@njit(cache=True)
 def cn02snr(cn0: float, front_end_bw: float = 4e6, noise_figure: float = 0.0):
     snr = cn0 - 10 * np.log10(front_end_bw) - noise_figure  # dB
 
     return snr
 
 
-@njit
+@njit(cache=True)
 def snr2cn0(snr: float, front_end_bw: float = 4e6, noise_figure: float = 0.0):
     cn0 = snr + 10 * np.log10(front_end_bw) + noise_figure  # dB-Hz
 

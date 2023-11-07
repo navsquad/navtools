@@ -4,7 +4,7 @@ from numba import njit
 from navtools.conversions import ecef2lla, ecef2enu
 
 
-@njit
+@njit(cache=True)
 def compute_visibility_status(
     rx_pos: np.array, emitter_pos: np.array, mask_angle: float = 10.0
 ) -> tuple[bool, float, float]:
@@ -30,7 +30,7 @@ def compute_visibility_status(
     return is_visible, emitter_az, emitter_el
 
 
-@njit
+@njit(cache=True)
 def compute_az_and_el(rx_pos: np.array, emitter_pos: np.array) -> tuple[float, float]:
     """computes azimuth and elevation of emitter from receiver location in ECEF reference frame
 
@@ -62,7 +62,7 @@ def compute_az_and_el(rx_pos: np.array, emitter_pos: np.array) -> tuple[float, f
     return az, el
 
 
-@njit
+@njit(cache=True)
 def compute_range_and_unit_vector(
     rx_pos: np.array, emitter_pos: np.array
 ) -> tuple[float, np.array]:
@@ -87,7 +87,7 @@ def compute_range_and_unit_vector(
     return range, unit_vector
 
 
-@njit
+@njit(cache=True)
 def compute_range_rate(
     rx_vel: np.array, emitter_vel: np.array, unit_vector: np.array
 ) -> float:

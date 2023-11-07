@@ -91,6 +91,7 @@ def pcps(
     return correlations
 
 
+@njit(cache=True)
 def upsample_sequence(
     sequence: np.array,
     nsamples: int,
@@ -123,7 +124,7 @@ def upsample_sequence(
     """
     start_phase = phase_shift + start_phase
     phases = np.arange(0, nsamples) * (fchip / fsamp) + start_phase  # [chips]
-    samples = sequence[phases.astype(int) % sequence.size]
+    samples = sequence[phases.astype(np.int32) % sequence.size]
 
     return samples
 
