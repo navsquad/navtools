@@ -29,7 +29,7 @@ def parcorr(
     """
     correlation_fft = fft(sequence) * np.conj(fft(baseline_sequence))
     correlation_ifft = ifft(correlation_fft)
-    correlation = correlation_ifft**2  # correlation power
+    correlation = np.abs(correlation_ifft) ** 2  # correlation power
 
     return correlation
 
@@ -84,7 +84,7 @@ def pcps(
     ) -> np.array:
         correlation_fft = baseband_signals_fft * code_replica_cfft
         correlation_ifft = ifft(correlation_fft)
-        correlation = correlation_ifft**2
+        correlation = np.abs(correlation_ifft) ** 2
 
         return correlation
 
@@ -209,7 +209,7 @@ def apply_carrier_to_noise(samples: np.array, cn0: float, fsamp: float) -> np.ar
     """
     cn0 = 10 ** (cn0 / 10)  # linear ratio
 
-    if np.iscomplex(samples):
+    if np.iscomplex(samples).all():
         A = np.sqrt((2 * cn0) / fsamp)
         noise = np.random.randn(samples.size).astype(samples.dtype) / np.sqrt(2)
 

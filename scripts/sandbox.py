@@ -1,20 +1,17 @@
-# %%
-import navtools as nt
 import numpy as np
 import matplotlib.pyplot as plt
-import mpld3
 
-mpld3.enable_notebook()
+from navtools.dsp import carrier, apply_carrier_to_noise
 
-# %%
-ideal_baseband_signal = 2 * np.random.randint(low=0, high=2, size=int(100)) - 1
-baseband_signal = np.roll(ideal_baseband_signal, 50)
-replica = ideal_baseband_signal
-correlation = nt.dsp.parcorr(baseband_signal, replica)
+# currently validating CN0 application to carrier wave
 
-# %%
-ax = nt.plot.correlation(correlation, title="GPS Correlations")
-ax.plot(correlation * 2)
+fcarrier = 1
+fsamp = 100
+duration = 10
+carrier = carrier(fcarrier=fcarrier, fsamp=fsamp, duration=duration)
+noisy_carrier = apply_carrier_to_noise(samples=carrier, cn0=45, fsamp=fsamp)
+
+_, cn0_ax = plt.subplots()
+cn0_ax.plot(np.real(noisy_carrier))
+cn0_ax.plot(np.real(carrier))
 plt.show()
-
-# %%

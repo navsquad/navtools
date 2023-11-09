@@ -49,21 +49,3 @@ class SignalFile:  # TODO: correct handling of real-valued data
         return samples
 
 
-# def parse_bag_topics(bag_file_path: str, topics: list):
-#     bag_file_path = pl.Path(bag_file_path)
-#     b = bagreader(bag_file_path)
-#     output_files = []
-#     DESCRIPTION = "Parsing  %s ... " % (bag_file_path.name)
-
-#     for topic in tqdm(topics, desc=DESCRIPTION):
-#         topic_data = b.message_by_topic(topic)
-#         output_files.append(topic_data)
-
-
-# def get_parsed_topic(bag_dir_file_path: str, topic: str):
-#     modified_topic = topic.replace("/", "", 1).replace("/", "-")
-#     csv_file_path = pl.Path(bag_dir_file_path) / modified_topic
-
-#     topic_data = pd.read_csv(csv_file_path.with_suffix(".csv"))
-
-#     return topic_data
