@@ -35,17 +35,15 @@ class SignalFile:  # TODO: correct handling of real-valued data
         byte_location = int(sample_location * bytes_per_sample)
         self._fid.seek(byte_location)
 
-    def fread(self, num_samples: int) -> np.array:
-        num_samples = num_samples * self._sample_multiplier
+    def fread(self, nsamples: int) -> np.array:
+        nsamples = nsamples * self._sample_multiplier
         samples = np.fromfile(
             file=self._fid,
             dtype=self._dtype,
-            count=num_samples,
+            count=nsamples,
         )
 
         if self._is_complex_with_invalid_dtype:
             samples = samples.astype(np.float32).view(np.complex64)
 
         return samples
-
-

@@ -189,14 +189,14 @@ def carrier(
     return carrier
 
 
-# @njit(cache=True)
-def apply_carrier_to_noise(samples: np.array, cn0: float, fsamp: float) -> np.array:
+@njit(cache=True)
+def apply_complex_cn0(samples: np.array, cn0: float, fsamp: float) -> np.array:
     """applies corresponding noise and amplitude to signal samples based on C/N0
 
     Parameters
     ----------
     samples : np.array
-        samples to corrupt
+        samples to add noise to
     cn0 : float
         carrier-to-noise density ratio [dB-Hz]
     fsamp : float
@@ -205,18 +205,49 @@ def apply_carrier_to_noise(samples: np.array, cn0: float, fsamp: float) -> np.ar
     Returns
     -------
     np.array
-        corrupted samples
+        noisy samples
     """
     cn0 = 10 ** (cn0 / 10)  # linear ratio
 
-    if np.iscomplex(samples).any():
-        A = np.sqrt((2 * cn0) / fsamp)
-        noise = np.random.randn(samples.size).view(samples.dtype) / np.sqrt(2)
-
-    else:
-        A = 2 * np.sqrt(cn0 / fsamp)
-        noise = np.random.randn(samples.size).astype(samples.dtype)
+    A = np.sqrt((2 * cn0) / fsamp)
+    noise = np.random.randn(2 * samples.size).view(samples.dtype) / np.sqrt(2)
 
     noisy_samples = A * samples + noise
 
     return noisy_samples
+
+
+@njit(cache=True)
+def apply_real_cn0(samples: np.array, cn0: float, fsamp: float) -> np.array:
+    """applies corresponding noise and amplitude to signal samples based on C/N0
+
+    Parameters
+    ----------
+    samples : np.array
+        samples to add noise to
+    cn0 : float
+        carrier-to-noise density ratio [dB-Hz]
+    fsamp : float
+        sampling frequency [Hz]
+
+    Returns
+    -------
+    np.array
+        noisy samples
+    """
+    cn0 = 10 ** (cn0 / 10)  # linear ratio
+
+    A = 2 * np.sqrt(cn0 / fsamp)
+    noise = np.random.randn(samples.size).astype(samples.dtype)
+
+    noisy_samples = A * samples + noise
+
+    return noisy_samples
+
+
+@njit(cache=True)
+def quantize(samples: np.array, bit_depth: int, headroom: int = 3):
+    scale_factor = 0.5 * ((2**bit_depth) - 1 - headroom) / np.max(np.abs(samples))
+    quantized_samples = scale_factor * samples
+
+    return quantized_samples
