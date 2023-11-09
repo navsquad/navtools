@@ -1,9 +1,11 @@
 import numpy as np
 from numba import njit
+from numpy.typing import ArrayLike
 
 from navtools.conversions import ecef2lla, ecef2enu
 
 
+# Line-of-Sight States
 @njit(cache=True)
 def compute_visibility_status(
     rx_pos: np.array, emitter_pos: np.array, mask_angle: float = 10.0
@@ -111,3 +113,48 @@ def compute_range_rate(
     range_rate = np.sum(rx_vel_rel_sat * unit_vector)
 
     return range_rate
+
+
+# Bitwise Operations
+@njit(cache=True)
+def get_bit_value(number: int, index: int):
+    return (number >> index) & 1
+
+
+@njit(cache=True)
+def set_bit_value(number: int, index: int):
+    return number | (1 << index)
+
+
+@njit(cache=True)
+def xor_register_taps(register: int, nbits: int, taps: ArrayLike):
+    xor = 0
+    for tap in taps:
+        xor ^= register >> (nbits - tap)
+
+    return xor & 1
+
+
+@njit(cache=True)
+def msequence(nbits: int, taps: ArrayLike, state: int = None):
+    length = 2**nbits - 1
+
+    if state is None:
+        lfsr = length
+    else:
+        lfsr = state
+
+    sequence = []
+    for _ in range(length):
+        sequence.append(get_bit_value(number=lfsr, index=0))
+        feedback = xor_register_taps(register=lfsr, nbits=nbits, taps=taps)
+        lfsr = (lfsr >> 1) | (feedback << int((nbits - 1)))
+
+    sequence = np.array(sequence)
+
+    return sequence
+
+
+@njit(cache=True)
+def nextpow2(integer: int):
+    return 1 << (integer - 1).bit_length()
