@@ -189,7 +189,7 @@ def carrier(
     return carrier
 
 
-@njit(cache=True)
+# @njit(cache=True)
 def apply_carrier_to_noise(samples: np.array, cn0: float, fsamp: float) -> np.array:
     """applies corresponding noise and amplitude to signal samples based on C/N0
 
@@ -209,9 +209,9 @@ def apply_carrier_to_noise(samples: np.array, cn0: float, fsamp: float) -> np.ar
     """
     cn0 = 10 ** (cn0 / 10)  # linear ratio
 
-    if np.iscomplex(samples).all():
+    if np.iscomplex(samples).any():
         A = np.sqrt((2 * cn0) / fsamp)
-        noise = np.random.randn(samples.size).astype(samples.dtype) / np.sqrt(2)
+        noise = np.random.randn(samples.size).view(samples.dtype) / np.sqrt(2)
 
     else:
         A = 2 * np.sqrt(cn0 / fsamp)
