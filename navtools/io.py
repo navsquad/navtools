@@ -36,7 +36,7 @@ class SignalFile:  # TODO: correct handling of real-valued data
         self._fid.seek(byte_location)
 
     def fread(self, nsamples: int) -> np.array:
-        nsamples = nsamples * self._sample_multiplier
+        nsamples = int(nsamples) * self._sample_multiplier
         samples = np.fromfile(
             file=self._fid,
             dtype=self._dtype,

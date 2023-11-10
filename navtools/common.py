@@ -158,3 +158,28 @@ def msequence(nbits: int, taps: ArrayLike, state: int = None):
 @njit(cache=True)
 def nextpow2(integer: int):
     return 1 << (integer - 1).bit_length()
+
+
+# Factories
+from navtools.signals import diy, gps
+
+
+def get_signal_properties(signal_name: str):
+    """factory function that retrieves requested signal properties
+
+    Parameters
+    ----------
+    signal_name : str
+        name of signal
+
+    Returns
+    -------
+    _type_
+        signal properties
+    """
+    SIGNALS = {"gpsl1ca": gps.L1CA, "freedom": diy.FREEDOM, "auburn": diy.AUBURN}
+
+    signal_name = "".join([i for i in signal_name if i.isalnum()]).casefold()
+    properties = SIGNALS.get(signal_name, gps.L1CA)  # defaults to gps-l1ca
+
+    return properties

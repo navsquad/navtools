@@ -1,22 +1,24 @@
-from navtools.signals import diy, gps
+from dataclasses import dataclass
 
 
-def get_signal_properties(signal_name: str):
-    """factory function that retrieves requested signal properties
+@dataclass(frozen=True)
+class SatelliteSignal:
+    transmit_power: float  # [W]
+    transmit_antenna_gain: float  # [dBi]
 
-    Parameters
-    ----------
-    signal_name : str
-        name of signal
 
-    Returns
-    -------
-    _type_
-        signal properties
-    """
-    SIGNALS = {"gpsl1ca": gps.L1CA, "freedom": diy.FREEDOM, "auburn": diy.AUBURN}
+@dataclass(frozen=True)
+class PhaseShiftKeyedSignal(SatelliteSignal):
+    fcarrier: float
 
-    signal_name = "".join([i for i in signal_name if i.isalnum()]).casefold()
-    properties = SIGNALS.get(signal_name, gps.L1CA)  # defaults to gps-l1ca
+    fbit_data: float
+    msg_length_data: int
+    fchip_data: float
+    code_length_data: int
+    prn_generator_data: any
 
-    return properties
+    fbit_pilot: float = None
+    msg_length_pilot: int = None
+    fchip_pilot: float = None
+    code_length_pilot: float = None
+    prn_generator_pilot: any = None

@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 
-from navtools.signals.types import PhaseShiftKeyedSignal
+from navtools.signals.signals import PhaseShiftKeyedSignal
 from navtools.common import get_bit_value, xor_register_taps
 
 
