@@ -158,7 +158,34 @@ def carrier_replica(
 
 
 @njit(cache=True)
-def carrier(
+def carrier_from_phase(
+    delta_phase: float, nsamples: int, start_phase: float = 0.0
+) -> np.array:
+    """same functionality as carrier_replica with different interface and a non-conjugated output
+    (useful for accurately simulating phase instead of integrating frequency)
+
+    Parameters
+    ----------
+    delta_phase : float
+        total change in phase between updates
+    nsamples : int
+        # of samples in block
+    start_phase : float, optional
+        fractional starting phase that is calculated when continually upsampling, by default 0.0
+
+    Returns
+    -------
+    np.array
+        carrier wave
+    """
+    phases = np.arange(0, nsamples) * (delta_phase / nsamples) + start_phase  # [cycles]
+    replica = np.exp(2 * np.pi * 1j * phases)
+
+    return replica
+
+
+@njit(cache=True)
+def carrier_from_frequency(
     fcarrier: float,
     fsamp: float,
     duration: float,
