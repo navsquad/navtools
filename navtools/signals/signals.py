@@ -29,16 +29,28 @@ class PhaseShiftKeyedSignal(SatelliteSignal):
 @njit(cache=True)
 def bpsk_correlator(
     T: float,
+    cn0: float,
     chip_error: float,
     ferror: float,
     phase_error: float,
-    chip_offset: float = 0,
+    tap_spacing: float = 0,
 ):
-    correlator = (1 - np.abs(chip_error + chip_offset)) * np.exp(
-        np.pi * 1j * (ferror * T + 2 * phase_error)
+    cn0 = 10 ** (cn0 / 10)  # linear ratio
+    amplitude = np.sqrt(2 * cn0 * T) * np.sinc(np.pi * ferror * T)
+
+    acorr_magnitude = 1 - np.abs(chip_error + tap_spacing)
+    acorr_magnitude = np.where(acorr_magnitude < 0, 0.0, acorr_magnitude)
+
+    correlator = (
+        amplitude
+        * acorr_magnitude
+        * np.exp(np.pi * 1j * (ferror * T + 2 * phase_error))
     )
 
-    inphase = np.real(correlator)
-    quadrature = np.imag(correlator)
+    inphase_noise = np.random.randn(cn0.size)
+    quadrature_noise = np.random.randn(cn0.size)
+
+    inphase = np.real(correlator) + inphase_noise
+    quadrature = np.imag(correlator) + quadrature_noise
 
     return inphase, quadrature
