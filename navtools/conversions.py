@@ -48,7 +48,7 @@ def lla2ecef(lat: np.array, lon: np.array, alt: np.array, degrees=True) -> ECEF:
     return ECEF(x=x, y=y, z=z)
 
 
-# @njit(cache=True)
+@njit(cache=True)
 def ecef2enu(
     x: np.array,
     y: np.array,
@@ -76,7 +76,7 @@ def ecef2enu(
     rel_z_pos = z - ecef0.z
     rel_pos = np.array([rel_x_pos, rel_y_pos, rel_z_pos], dtype=np.float64).T
 
-    ned = R @ rel_pos.T
+    ned = R @ rel_pos
 
     return ENU(east=ned[1], north=ned[0], up=-ned[2])
 
