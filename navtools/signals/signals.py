@@ -38,9 +38,7 @@ def bpsk_correlator(
     cn0 = 10 ** (cn0 / 10)  # linear ratio
     amplitude = np.sqrt(2 * cn0 * T) * np.sinc(np.pi * ferror * T)
 
-    acorr_magnitude = 1 - np.abs(
-        chip_error - tap_spacing
-    )  #! ensure using (-) is correct
+    acorr_magnitude = 1 - np.abs(chip_error - tap_spacing)
     acorr_magnitude = np.where(acorr_magnitude < 0, 0.0, acorr_magnitude)
 
     correlator = (

@@ -161,7 +161,7 @@ def nextpow2(integer: int):
 
 
 # Factories
-from navtools.signals import diy, gps
+from navtools.signals import diy, gps, signals
 
 
 def get_signal_properties(signal_name: str):
@@ -183,3 +183,12 @@ def get_signal_properties(signal_name: str):
     properties = SIGNALS.get(signal_name, gps.L1CA)  # defaults to gps-l1ca
 
     return properties
+
+
+def get_correlator_model(correlator_name: str):
+    MODELS = {"bpsk": signals.bpsk_correlator}
+
+    correlator_name = "".join([i for i in correlator_name if i.isalnum()]).casefold()
+    model = MODELS.get(correlator_name, gps.L1CA)  # defaults to bpsk
+
+    return model
