@@ -5,7 +5,7 @@ from numpy.typing import ArrayLike
 from navtools.conversions import ecef2lla, ecef2enu
 
 
-# Line-of-Sight States
+# * line-of-sight states *
 @njit(cache=True)
 def compute_visibility_status(
     rx_pos: np.array, emitter_pos: np.array, mask_angle: float = 10.0
@@ -115,7 +115,7 @@ def compute_range_rate(
     return range_rate
 
 
-# Bitwise Operations
+# * bitwise operations *
 @njit(cache=True)
 def get_bit_value(number: int, index: int):
     return (number >> index) & 1
@@ -160,7 +160,7 @@ def nextpow2(integer: int):
     return 1 << (integer - 1).bit_length()
 
 
-# Factories
+# * factories *
 from navtools.signals import diy, gps, signals
 
 
@@ -192,3 +192,14 @@ def get_correlator_model(correlator_name: str):
     model = MODELS.get(correlator_name, gps.L1CA)  # defaults to bpsk
 
     return model
+
+
+# * implementation tools *
+@njit(cache=True)
+def smart_transpose(col_size: np.ndarray, transformed_array: np.ndarray):
+    _, ncols = transformed_array.shape
+
+    if ncols != col_size:
+        transformed_array = transformed_array.T
+
+    return transformed_array

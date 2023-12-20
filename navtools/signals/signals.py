@@ -1,4 +1,5 @@
 import numpy as np
+import navtools as nt
 from dataclasses import dataclass
 from numba import njit
 
@@ -35,6 +36,11 @@ def bpsk_correlator(
     phase_error: float,
     tap_spacing: float = 0,
 ):
+    # handle dimensions for broadcasting
+    chip_error = nt.smart_transpose(col_size=cn0.size, transformed_array=chip_error)
+    ferror = nt.smart_transpose(col_size=cn0.size, transformed_array=ferror)
+    phase_error = nt.smart_transpose(col_size=cn0.size, transformed_array=phase_error)
+
     cn0 = 10 ** (cn0 / 10)  # linear ratio
     amplitude = np.sqrt(2 * cn0 * T) * np.sinc(np.pi * ferror * T)
 
