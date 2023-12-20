@@ -197,9 +197,11 @@ def get_correlator_model(correlator_name: str):
 # * implementation tools *
 @njit(cache=True)
 def smart_transpose(col_size: np.ndarray, transformed_array: np.ndarray):
-    _, ncols = transformed_array.shape
+    if transformed_array.ndim != 1:
+        # avoids numba error with precompiled tuple size
+        ncols = np.asarray(transformed_array[0]).size
 
-    if ncols != col_size:
-        transformed_array = transformed_array.T
+        if ncols != col_size:
+            transformed_array = transformed_array.T
 
     return transformed_array
