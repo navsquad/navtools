@@ -205,3 +205,14 @@ def smart_transpose(col_size: np.ndarray, transformed_array: np.ndarray):
             transformed_array = transformed_array.T
 
     return transformed_array
+
+
+def pad_list(input_list: list):
+    epochs = len(input_list)
+    max_nemitters = len(max(input_list, key=len))
+    padded_list = np.full((epochs, max_nemitters), np.nan)
+
+    for epoch, emitters in enumerate(input_list):
+        padded_list[epoch][0 : len(emitters)] = emitters
+
+    return padded_list
