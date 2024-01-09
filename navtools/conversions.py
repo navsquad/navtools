@@ -82,6 +82,27 @@ def ecef2enu(
 
 
 @njit(cache=True)
+def ecef2enuv(x: np.array, y: np.array, z: np.array, lat0, lon0, degrees=True) -> ECEF:
+    ecef = np.array([x, y, z], dtype=np.float64).T
+
+    if degrees:
+        lat0 = np.radians(lat0)
+        lon0 = np.radians(lon0)
+
+    R = np.array(
+        [
+            [-np.sin(lon0), -np.cos(lon0) * np.sin(lat0), np.cos(lon0) * np.cos(lat0)],
+            [np.cos(lon0), -np.sin(lon0) * np.sin(lat0), np.sin(lon0) * np.cos(lat0)],
+            [0, np.cos(lat0), np.sin(lat0)],
+        ],
+    ).T
+
+    enu = R @ ecef
+
+    return ENU(east=enu[0], north=enu[1], up=enu[2])
+
+
+@njit(cache=True)
 def enu2ecefv(
     east: np.array, north: np.array, up: np.array, lat0, lon0, degrees=True
 ) -> ECEF:
