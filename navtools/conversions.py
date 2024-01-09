@@ -74,7 +74,7 @@ def ecef2enu(
     rel_x_pos = x - ecef0.x
     rel_y_pos = y - ecef0.y
     rel_z_pos = z - ecef0.z
-    rel_pos = np.array([rel_x_pos, rel_y_pos, rel_z_pos], dtype=np.float64).T
+    rel_pos = np.array([rel_x_pos, rel_y_pos, rel_z_pos], dtype=np.float64)
 
     ned = R @ rel_pos
 
@@ -82,8 +82,10 @@ def ecef2enu(
 
 
 @njit(cache=True)
-def ecef2enuv(x: np.array, y: np.array, z: np.array, lat0, lon0, degrees=True) -> ECEF:
-    ecef = np.array([x, y, z], dtype=np.float64).T
+def ecef2enuv(
+    x: np.array, y: np.array, z: np.array, lat0: float, lon0: float, degrees=True
+) -> ECEF:
+    ecef = np.array([x, y, z], dtype=np.float64)
 
     if degrees:
         lat0 = np.radians(lat0)
@@ -106,7 +108,7 @@ def ecef2enuv(x: np.array, y: np.array, z: np.array, lat0, lon0, degrees=True) -
 def enu2ecefv(
     east: np.array, north: np.array, up: np.array, lat0, lon0, degrees=True
 ) -> ECEF:
-    enu = np.array([east, north, up], dtype=np.float64).T
+    enu = np.array([east, north, up], dtype=np.float64)
 
     if degrees:
         lat0 = np.radians(lat0)
