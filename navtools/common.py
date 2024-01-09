@@ -6,6 +6,7 @@ from navtools.conversions import ecef2lla, ecef2enu
 
 
 # * line-of-sight states *
+@njit(cache=True)
 def compute_visibility_status(
     rx_pos: np.array, emitter_pos: np.array, mask_angle: float = 10.0
 ) -> tuple[bool, float, float]:
@@ -31,6 +32,7 @@ def compute_visibility_status(
     return is_visible, emitter_az, emitter_el
 
 
+@njit(cache=True)
 def compute_az_and_el(rx_pos: np.array, emitter_pos: np.array) -> tuple[float, float]:
     """computes azimuth and elevation of emitter from receiver location in ECEF reference frame
 

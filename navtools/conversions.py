@@ -1,6 +1,8 @@
 import numpy as np
+from numba import njit, vectorize, float64
 from collections import namedtuple
 
+from numpy import sin, cos
 from navtools.constants import WGS84_RADIUS, WGS84_ECCENTRICITY
 
 # Reference Frames
@@ -9,6 +11,7 @@ ENU = namedtuple("ENU", ["east", "north", "up"])
 GEODETIC = namedtuple("GEODETIC", ["lat", "lon", "alt"])
 
 
+@njit(cache=True)
 def ecef2lla(x: np.array, y: np.array, z: np.array) -> GEODETIC:
     # TODO: clean this up a little
     p = (x**2 + y**2) / WGS84_RADIUS**2
@@ -30,104 +33,75 @@ def ecef2lla(x: np.array, y: np.array, z: np.array) -> GEODETIC:
     return GEODETIC(lat=lat, lon=lon, alt=alt)
 
 
-def lla2ecef(lat: np.array, lon: np.array, alt: np.array, degrees=True) -> ECEF:
-    if degrees:
+@njit(cache=True)
+def lla2ecef(lat: np.array, lon: np.array, alt: np.array, deg=True) -> ECEF:
+    if deg:
         lat = np.radians(lat)
         lon = np.radians(lon)
 
-    den = 1 - WGS84_ECCENTRICITY**2 * np.sin(lat) ** 2
+    den = 1 - WGS84_ECCENTRICITY**2 * sin(lat) ** 2
     RN = WGS84_RADIUS / np.sqrt(den)
 
-    x = (RN + alt) * np.cos(lat) * np.cos(lon)
-    y = (RN + alt) * np.cos(lat) * np.sin(lon)
-    z = (RN * (1 - WGS84_ECCENTRICITY**2) + alt) * np.sin(lat)
+    x = (RN + alt) * cos(lat) * cos(lon)
+    y = (RN + alt) * cos(lat) * sin(lon)
+    z = (RN * (1 - WGS84_ECCENTRICITY**2) + alt) * sin(lat)
 
     return ECEF(x=x, y=y, z=z)
 
 
+@njit(cache=True)
+def uvw2enu(u: float, v: float, w: float, lat0: float, lon0: float, deg=True):
+    if deg:
+        lat0 = np.radians(lat0)
+        lon0 = np.radians(lon0)
+
+    t = cos(lon0) * u + sin(lon0) * v
+    east = -sin(lon0) * u + cos(lon0) * v
+    north = -sin(lat0) * t + cos(lat0) * w
+    up = cos(lat0) * t + sin(lat0) * w
+
+    return ENU(east=east, north=north, up=up)
+
+
+@njit(cache=True)
+def enu2uvw(
+    east: float, north: float, up: float, lat0: float, lon0: float, deg: bool = True
+):
+    t = cos(lat0) * up - sin(lat0) * north
+    w = sin(lat0) * up + cos(lat0) * north
+
+    u = cos(lon0) * t - sin(lon0) * east
+    v = sin(lon0) * t + cos(lon0) * east
+
+    return ECEF(x=u, y=v, z=w)
+
+
+@njit(cache=True)
 def ecef2enu(
-    x: np.array,
-    y: np.array,
-    z: np.array,
+    x: float,
+    y: float,
+    z: float,
     lat0: float,
     lon0: float,
     alt0: float,
-    degrees=True,
-) -> ENU:
-    if degrees:
-        lat0 = np.radians(lat0)
-        lon0 = np.radians(lon0)
+    deg: bool = True,
+):
+    x0, y0, z0 = lla2ecef(lat=lat0, lon=lon0, alt=alt0, deg=deg)
 
-    R = np.array(
-        [
-            [-np.sin(lat0) * np.cos(lon0), -np.sin(lat0) * np.sin(lon0), np.cos(lat0)],
-            [-np.sin(lon0), np.cos(lon0), 0],
-            [-np.cos(lat0) * np.cos(lon0), -np.cos(lat0) * np.sin(lon0), -np.sin(lat0)],
-        ],
-    )
+    enu = uvw2enu(x - x0, y - y0, z - z0, lat0, lon0, deg=deg)
 
-    ecef0 = lla2ecef(lat=lat0, lon=lon0, alt=alt0, degrees=False)
-    rel_x_pos = x - ecef0.x
-    rel_y_pos = y - ecef0.y
-    rel_z_pos = z - ecef0.z
-    rel_pos = np.array([rel_x_pos, rel_y_pos, rel_z_pos], dtype=np.float64)
-
-    ned = R @ rel_pos
-
-    return ENU(east=ned[1], north=ned[0], up=-ned[2])
-
-
-def ecef2enuv(
-    x: np.array, y: np.array, z: np.array, lat0: float, lon0: float, degrees=True
-) -> ECEF:
-    ecef = np.array([x, y, z], dtype=np.float64)
-
-    if degrees:
-        lat0 = np.radians(lat0)
-        lon0 = np.radians(lon0)
-
-    R = np.array(
-        [
-            [-np.sin(lon0), -np.cos(lon0) * np.sin(lat0), np.cos(lon0) * np.cos(lat0)],
-            [np.cos(lon0), -np.sin(lon0) * np.sin(lat0), np.sin(lon0) * np.cos(lat0)],
-            [0, np.cos(lat0), np.sin(lat0)],
-        ],
-    ).T
-
-    enu = R @ ecef
-
-    return ENU(east=enu[0], north=enu[1], up=enu[2])
-
-
-def enu2ecefv(
-    east: np.array, north: np.array, up: np.array, lat0, lon0, degrees=True
-) -> ECEF:
-    enu = np.array([east, north, up], dtype=np.float64)
-
-    if degrees:
-        lat0 = np.radians(lat0)
-        lon0 = np.radians(lon0)
-
-    R = np.array(
-        [
-            [-np.sin(lon0), -np.cos(lon0) * np.sin(lat0), np.cos(lon0) * np.cos(lat0)],
-            [np.cos(lon0), -np.sin(lon0) * np.sin(lat0), np.sin(lon0) * np.cos(lat0)],
-            [0, np.cos(lat0), np.sin(lat0)],
-        ],
-    )
-
-    ecef = R @ enu
-
-    return ECEF(x=ecef[0], y=ecef[1], z=ecef[2])
+    return ENU(east=enu.east, north=enu.north, up=enu.up)
 
 
 # Signals
+@njit(cache=True)
 def cn02snr(cn0: float, front_end_bw: float = 4e6, noise_figure: float = 0.0):
     snr = cn0 - 10 * np.log10(front_end_bw) - noise_figure  # dB
 
     return snr
 
 
+@njit(cache=True)
 def snr2cn0(snr: float, front_end_bw: float = 4e6, noise_figure: float = 0.0):
     cn0 = snr + 10 * np.log10(front_end_bw) + noise_figure  # dB-Hz
 
