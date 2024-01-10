@@ -93,6 +93,22 @@ def ecef2enu(
     return ENU(east=enu.east, north=enu.north, up=enu.up)
 
 
+@njit(cache=True)
+def enu2ecef(
+    east: float,
+    north: float,
+    up: float,
+    lat0: float,
+    lon0: float,
+    h0: float,
+    deg: bool = True,
+):
+    x0, y0, z0 = lla2ecef(lat0, lon0, h0, deg=deg)
+    dx, dy, dz = enu2uvw(east, north, up, lat0, lon0, deg=deg)
+
+    return ECEF(x=x0 + dx, y=y0 + dy, z=z0 + dz)
+
+
 # Signals
 @njit(cache=True)
 def cn02snr(cn0: float, front_end_bw: float = 4e6, noise_figure: float = 0.0):
