@@ -63,9 +63,7 @@ def bpsk_correlator(
     inphase_noise = np.random.randn(size)
     quadrature_noise = np.random.randn(size)
 
-    inphase = np.real(correlator) + np.where(acorr_magnitude == 0, 0.0, inphase_noise)
-    quadrature = np.imag(correlator) + np.where(
-        acorr_magnitude == 0, 0.0, quadrature_noise
-    )
+    inphase = np.real(correlator) + inphase_noise
+    quadrature = np.imag(correlator) + quadrature_noise
 
     return inphase, quadrature
