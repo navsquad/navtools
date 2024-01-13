@@ -67,6 +67,10 @@ def uvw2enu(u: float, v: float, w: float, lat0: float, lon0: float, deg=True):
 def enu2uvw(
     east: float, north: float, up: float, lat0: float, lon0: float, deg: bool = True
 ):
+    if deg:
+        lat0 = np.radians(lat0)
+        lon0 = np.radians(lon0)
+
     t = cos(lat0) * up - sin(lat0) * north
     w = sin(lat0) * up + cos(lat0) * north
 
