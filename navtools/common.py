@@ -85,7 +85,7 @@ def compute_range_and_unit_vector(
     rx_pos = smart_transpose(col_size=3, transformed_array=rx_pos)
     emitter_pos = smart_transpose(col_size=3, transformed_array=emitter_pos)
 
-    pos_rx_emitter = rx_pos - emitter_pos  # relative position to emitter
+    pos_rx_emitter = rx_pos - emitter_pos  # position relative to emitter
 
     range = np.sqrt(np.sum(pos_rx_emitter**2, axis=-1))
     unit_vector = pos_rx_emitter.T / range
@@ -117,8 +117,8 @@ def compute_range_rate(
     emitter_vel = smart_transpose(col_size=3, transformed_array=emitter_vel)
     unit_vector = smart_transpose(col_size=3, transformed_array=unit_vector)
 
-    rx_vel_rel_sat = rx_vel - emitter_vel
-    range_rate = np.sum(rx_vel_rel_sat * unit_vector)
+    vel_rx_emitter = rx_vel - emitter_vel  # velocity relative to emitter
+    range_rate = np.sum(vel_rx_emitter * unit_vector, axis=-1)
 
     return range_rate
 
