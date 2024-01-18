@@ -82,9 +82,13 @@ def compute_range_and_unit_vector(
     tuple[float, np.array]
         range (m), unit vector in ECEF reference frame
     """
-    rx_pos_rel_sat = rx_pos - emitter_pos
-    range = np.sqrt(np.sum(rx_pos_rel_sat**2))
-    unit_vector = rx_pos_rel_sat / range
+    rx_pos = smart_transpose(col_size=3, transformed_array=rx_pos)
+    emitter_pos = smart_transpose(col_size=3, transformed_array=emitter_pos)
+
+    pos_rx_emitter = rx_pos - emitter_pos  # relative position to emitter
+
+    range = np.sqrt(np.sum(pos_rx_emitter**2, axis=-1))
+    unit_vector = pos_rx_emitter.T / range
 
     return range, unit_vector
 
@@ -109,6 +113,10 @@ def compute_range_rate(
     float
         range rate (m/s)
     """
+    rx_vel = smart_transpose(col_size=3, transformed_array=rx_vel)
+    emitter_vel = smart_transpose(col_size=3, transformed_array=emitter_vel)
+    unit_vector = smart_transpose(col_size=3, transformed_array=unit_vector)
+
     rx_vel_rel_sat = rx_vel - emitter_vel
     range_rate = np.sum(rx_vel_rel_sat * unit_vector)
 
