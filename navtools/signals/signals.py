@@ -35,6 +35,7 @@ def bpsk_correlator(
     ferror: float,
     phase_error: float,
     tap_spacing: float = 0,
+    include_noise: bool = True,
 ):
     # handle dimensions for broadcasting
     if isinstance(cn0, np.ndarray):
@@ -60,8 +61,12 @@ def bpsk_correlator(
         * np.exp(np.pi * 1j * (ferror * T + 2 * phase_error))
     )
 
-    inphase_noise = np.random.randn(size)
-    quadrature_noise = np.random.randn(size)
+    if include_noise:
+        inphase_noise = np.random.randn(size)
+        quadrature_noise = np.random.randn(size)
+    else:
+        inphase_noise = 0.0
+        quadrature_noise = 0.0
 
     inphase = np.real(correlator) + inphase_noise
     quadrature = np.imag(correlator) + quadrature_noise
