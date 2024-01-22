@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, generated_jit, types
 from numpy.typing import ArrayLike
 
 from navtools.conversions import ecef2lla, ecef2enu
@@ -224,3 +224,9 @@ def pad_list(input_list: list):
         padded_list[epoch][0 : len(emitters)] = emitters
 
     return padded_list
+
+
+@njit
+def atleast_1d(x):
+    zero = np.zeros((1,), dtype=np.bool_)
+    return x + zero

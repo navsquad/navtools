@@ -27,7 +27,7 @@ class PhaseShiftKeyedSignal(SatelliteSignal):
     prn_generator_pilot: any = None
 
 
-# @njit(cache=True)
+@njit(cache=True)
 def bpsk_correlator(
     T: float,
     cn0: float,
@@ -37,17 +37,15 @@ def bpsk_correlator(
     tap_spacing: float = 0,
     include_noise: bool = True,
 ):
-    # handle dimensions for broadcasting
-    if isinstance(cn0, np.ndarray):
-        chip_error = nt.smart_transpose(col_size=cn0.size, transformed_array=chip_error)
-        ferror = nt.smart_transpose(col_size=cn0.size, transformed_array=ferror)
-        phase_error = nt.smart_transpose(
-            col_size=cn0.size, transformed_array=phase_error
-        )
+    cn0 = nt.atleast_1d(cn0)
+    chip_error = nt.atleast_1d(chip_error)
+    ferror = nt.atleast_1d(ferror)
+    phase_error = nt.atleast_1d(phase_error)
 
-        size = cn0.size
-    else:
-        size = 1
+    # handle dimensions for broadcasting
+    chip_error = nt.smart_transpose(col_size=cn0.size, transformed_array=chip_error)
+    ferror = nt.smart_transpose(col_size=cn0.size, transformed_array=ferror)
+    phase_error = nt.smart_transpose(col_size=cn0.size, transformed_array=phase_error)
 
     cn0 = 10 ** (cn0 / 10)  # linear ratio
     amplitude = np.sqrt(2 * cn0 * T) * np.sinc(np.pi * ferror * T)
@@ -62,11 +60,11 @@ def bpsk_correlator(
     )
 
     if include_noise:
-        inphase_noise = np.random.randn(size)
-        quadrature_noise = np.random.randn(size)
+        inphase_noise = np.random.randn(cn0.size)
+        quadrature_noise = np.random.randn(cn0.size)
     else:
-        inphase_noise = np.zeros(size)
-        quadrature_noise = np.zeros(size)
+        inphase_noise = np.zeros(cn0.size)
+        quadrature_noise = np.zeros(cn0.size)
 
     inphase = np.real(correlator) + inphase_noise
     quadrature = np.imag(correlator) + quadrature_noise
