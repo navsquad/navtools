@@ -72,7 +72,7 @@ def bpsk_correlator(
     return inphase, quadrature
 
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def bpsk_correlator(
     T: float,
     cn0: float,
