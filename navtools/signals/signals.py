@@ -27,7 +27,7 @@ class PhaseShiftKeyedSignal(SatelliteSignal):
     prn_generator_pilot: any = None
 
 
-# @njit(cache=True)
+@njit(cache=True)
 def bpsk_correlator(
     T: float,
     cn0: float,
@@ -60,11 +60,11 @@ def bpsk_correlator(
     )
 
     if include_noise:
-        inphase_noise = np.random.randn(*chip_error.shape)
-        quadrature_noise = np.random.randn(*chip_error.shape)
+        inphase_noise = np.random.randn(cn0.size)
+        quadrature_noise = np.random.randn(cn0.size)
     else:
-        inphase_noise = np.zeros(*chip_error.shape)
-        quadrature_noise = np.zeros(*chip_error.shape)
+        inphase_noise = np.zeros(cn0.size)
+        quadrature_noise = np.zeros(cn0.size)
 
     inphase = np.real(correlator) + inphase_noise
     quadrature = np.imag(correlator) + quadrature_noise
