@@ -2,7 +2,9 @@ import numpy as np
 from numba import njit, generated_jit, types
 from numpy.typing import ArrayLike
 
-from navtools.conversions import ecef2lla, ecef2enu
+# from navtools.conversions import ecef2lla, ecef2enu
+
+# TODO: figure out where to sort functions
 
 
 # * line-of-sight states *
@@ -170,6 +172,7 @@ def nextpow2(integer: int):
 
 # * factories *
 from navtools.signals import diy, gps, signals
+
 
 
 def get_signal_properties(signal_name: str):

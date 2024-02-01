@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "navtools"
-version = "0.0.1"
+version = "0.0.2"
 description = "a Python package of fundamental positioning, navigation, and timing (PNT) tools"
-authors = ["Tanner Koza <kozatanner@gmail.com>"]
+authors = ["Tanner Koza <kozatanner@gmail.com>", "Daniel Sturdivant <sturdivant20@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 

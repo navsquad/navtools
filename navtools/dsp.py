@@ -3,6 +3,8 @@ from numba import njit
 from typing import Callable, Generator
 
 
+# TODO: figure out where to sort functions
+
 def parcorr(
     sequence: np.array,
     baseline_sequence: np.array,

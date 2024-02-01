@@ -5,6 +5,8 @@ from collections import namedtuple
 from numpy import sin, cos
 from navtools.constants import WGS84_RADIUS, WGS84_ECCENTRICITY
 
+# TODO: figure out where to sort functions
+
 # Reference Frames
 ECEF = namedtuple("ECEF", ["x", "y", "z"])
 ENU = namedtuple("ENU", ["east", "north", "up"])
