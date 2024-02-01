@@ -59,14 +59,11 @@ def bpsk_correlator(
         * np.exp(np.pi * 1j * (ferror * T + 2 * phase_error))
     )
 
-    if include_noise:
-        inphase_noise = np.random.randn(*correlator.shape)
-        quadrature_noise = np.random.randn(*correlator.shape)
-    else:
-        inphase_noise = np.zeros(*correlator.shape)
-        quadrature_noise = np.zeros(*correlator.shape)
+    inphase = np.real(correlator)
+    quadrature = np.imag(correlator)
 
-    inphase = np.real(correlator) + inphase_noise
-    quadrature = np.imag(correlator) + quadrature_noise
+    if include_noise:
+        inphase += np.random.randn(*correlator.shape)
+        quadrature += np.random.randn(*correlator.shape)
 
     return inphase, quadrature
