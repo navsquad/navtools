@@ -1,15 +1,13 @@
 '''
-|============================================ dcm.py ==============================================|
+|=========================================== skew.py ==============================================|
 |                                                                                                  |
 |  Property of NAVSQUAD (UwU). Unauthorized copying of this file via any medium would be super     |
 |  sad and unfortunate for us. Proprietary and confidential.                                       |
 |                                                                                                  |
 |--------------------------------------------------------------------------------------------------| 
 |                                                                                                  |
-|  @file     navtools/attitude/dcm.py                                                              |
-|  @brief    Attitude conversion from direction cosine matrices. All rotations assume right-hand   |
-|            coordinate frames with the order. Assumes euler angles in the order 'roll-pitch-yaw'  |
-|            and DCMs with the order of 'ZYX'.                                                     |
+|  @file     navtools/attitude.py                                                                  |
+|  @brief    Skew-symmetric forms of vectors.                                                      |
 |  @ref      Principles of GNSS, Inertial, and Multisensor Integrated Navigation Systems           |
 |              - (2013) Paul D. Groves                                                             |
 |  @author   Daniel Sturdivant <sturdivant20@gmail.com>                                            | 
@@ -20,44 +18,45 @@
 
 import numpy as np
 from numba import njit
-from .euler import euler2quat
 
-# === DCM2EULER === 
+
+#* ============================================================================================== *#
+# === SKEW ===
 @njit(cache=True, fastmath=True)
-def dcm2euler(C: np.ndarray) -> np.ndarray:
-  """Converts 'ZYX' DCM matrix into corresponding euler angles (roll-pitch-yaw)
+def skew(v: np.ndarray) -> np.ndarray:
+  """Converts vector into its skew symmetric form
 
   Parameters
   ----------
-  C : np.ndarray
-      3x3 'ZYX' direction cosine matrix
+  v : np.ndarray
+      3x1 vector
 
   Returns
   -------
   np.ndarray
-      3x1 euler angles roll, pitch, yaw [rad]
+      3x3 skew symmetric form of vector
   """
-  e = np.array([np.arctan2(C[1,2], C[2,2]), \
-                np.arcsin(-C[0,2]), \
-                np.arctan2(C[0,1], C[0,0])], 
-               dtype=np.double)
-  return e
+  M = np.array([[  0.0, -v[2],  v[1]], \
+                [ v[2],   0.0, -v[0]], \
+                [-v[1],  v[0],   0.0]], \
+       dtype=np.double)
+  return M
 
 
-# === DCM2QUAT === 
+# === DESKEW ===
 @njit(cache=True, fastmath=True)
-def dcm2quat(C: np.ndarray) -> np.ndarray:
-  """Converts 'ZYX' DCM matrix into corresponding quaternion
+def deskew(M: np.ndarray) -> np.ndarray:
+  """Converts skew symmetric form into its respective vector
 
   Parameters
   ----------
-  C : np.ndarray
-      3x1 'ZYX' direction cosine matrix
+  M : np.ndarray
+      3x3 skew symmetric form of vector
 
   Returns
   -------
   np.ndarray
-      4x1 quaternion
+      3x1 vector
   """
-  q = euler2quat(dcm2euler(C))
-  return q
+  v = np.array([M[2,1], M[0,2], M[1,0]], dtype=np.double)
+  return v

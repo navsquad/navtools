@@ -2,7 +2,8 @@ import numpy as np
 from numba import njit, generated_jit, types
 from numpy.typing import ArrayLike
 
-# from navtools.conversions import ecef2lla, ecef2enu
+from navtools.conversions.coordinates import ecef2lla, ecef2enu
+from navtools.signals.gen import signals
 
 # TODO: figure out where to sort functions
 
@@ -50,18 +51,11 @@ def compute_az_and_el(rx_pos: np.array, emitter_pos: np.array) -> tuple[float, f
     tuple[float, float]
         emitter azimuth (rad), emitter elevation (rad)
     """
-    range, _ = compute_range_and_unit_vector(rx_pos=rx_pos, emitter_pos=emitter_pos)
-    lla = ecef2lla(x=rx_pos[0], y=rx_pos[1], z=rx_pos[2])
-    enu = ecef2enu(
-        x=emitter_pos[0],
-        y=emitter_pos[1],
-        z=emitter_pos[2],
-        lat0=lla.lat,
-        lon0=lla.lon,
-        alt0=lla.alt,
-    )
-    el = np.arcsin(enu.up / range)
-    az = np.arctan2(enu.east, enu.north)
+    lla = ecef2lla(rx_pos)
+    enu = ecef2enu(emitter_pos, lla)
+    r = np.linalg.norm(enu)
+    az = np.arctan2(enu[0], enu[1])
+    el = np.arcsin(enu[2], r)
 
     return az, el
 
@@ -171,7 +165,7 @@ def nextpow2(integer: int):
 
 
 # * factories *
-from navtools.signals import diy, gps, signals
+from navtools.signals import diy, gps
 
 
 

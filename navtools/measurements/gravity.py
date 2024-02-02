@@ -19,8 +19,8 @@
 import numpy as np
 from numba import njit
 from navtools.constants import WGS84_E2, WGS84_R0, WGS84_RP, WGS84_F, WGS84_MU, GNSS_OMEGA_EARTH, WGS84_J2
-from navtools.conversions.coordinates.dcm import ned2ecefDcm
-from navtools.conversions.coordinates.position import ecef2lla
+from navtools.conversions.coordinates import ned2ecefDcm
+from navtools.conversions.coordinates import ecef2lla
 
 
 # === SOMIGLIANA ===

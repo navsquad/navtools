@@ -18,7 +18,7 @@
 
 import numpy as np
 from numba import njit
-from navtools.conversions.attitude.skew import skew
+from navtools.conversions.skew import skew
 from navtools.constants import GNSS_OMEGA_EARTH
 from .radii_of_curvature import radiiOfCurvature
 

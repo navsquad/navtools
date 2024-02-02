@@ -36,6 +36,7 @@ WGS84_F = (WGS84_R0 - WGS84_RP) / WGS84_R0  #! WGS84 flattening
 WGS84_J2 = 1.082627E-3;                     #! WGS84 earth second gravitational constant
 
 # GNSS
+TOTAL_SATS = 132                            #! total number of GNSS satellites
 GNSS_PI = 3.1415926535898                   #! pi constant defined for GNSS
 GNSS_TWO_PI = 2.0 * GNSS_PI                 #! 2*pi
 GNSS_HALF_PI = 0.5 * GNSS_PI                #! pi/2

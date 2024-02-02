@@ -15,8 +15,9 @@
 |==================================================================================================|
 '''
 
+import numpy as np
 import scipy.io as sio
-from .common import ensure_exist
+from .common import os, ensure_exist
 
 # === savemat ===
 # write dictionary to mat file

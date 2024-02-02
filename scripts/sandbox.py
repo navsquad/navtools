@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from navtools.dsp import carrier, apply_carrier_to_noise
+from navtools.signals.dsp import carrier, apply_carrier_to_noise
 
 # currently validating CN0 application to carrier wave
 

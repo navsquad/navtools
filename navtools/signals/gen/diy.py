@@ -4,7 +4,7 @@ import numpy as np
 from numba import njit
 from navtools.common import msequence
 
-from navtools.signals.signals import PhaseShiftKeyedSignal
+from navtools.signals.gen.signals import PhaseShiftKeyedSignal
 
 
 # PRN Generators
