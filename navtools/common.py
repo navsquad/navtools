@@ -3,7 +3,7 @@ from numba import njit, generated_jit, types
 from numpy.typing import ArrayLike
 
 from navtools.conversions.coordinates import ecef2lla, ecef2enu
-from navtools.signals.gen import signals
+from navtools.signals import signals
 
 # TODO: figure out where to sort functions
 
