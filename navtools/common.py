@@ -5,9 +5,6 @@ from numpy.typing import ArrayLike
 from navtools.conversions.coordinates import ecef2lla, ecef2enu
 from navtools.signals import signals
 
-# * factories *
-from navtools.signals.gen import diy, gps
-
 # TODO: figure out where to sort functions
 
 
@@ -166,6 +163,8 @@ def msequence(nbits: int, taps: ArrayLike, state: int = None):
 def nextpow2(integer: int):
     return 1 << (integer - 1).bit_length()
 
+# * factories *
+from navtools.signals.gen import diy, gps
 
 def get_signal_properties(signal_name: str):
     """factory function that retrieves requested signal properties
