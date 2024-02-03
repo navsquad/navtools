@@ -5,6 +5,9 @@ from numpy.typing import ArrayLike
 from navtools.conversions.coordinates import ecef2lla, ecef2enu
 from navtools.signals import signals
 
+# * factories *
+from navtools.signals.gen import diy, gps
+
 # TODO: figure out where to sort functions
 
 
@@ -55,7 +58,7 @@ def compute_az_and_el(rx_pos: np.array, emitter_pos: np.array) -> tuple[float, f
     enu = ecef2enu(emitter_pos, lla)
     r = np.linalg.norm(enu)
     az = np.arctan2(enu[0], enu[1])
-    el = np.arcsin(enu[2], r)
+    el = np.arcsin(enu[2] / r)
 
     return az, el
 
@@ -162,11 +165,6 @@ def msequence(nbits: int, taps: ArrayLike, state: int = None):
 @njit(cache=True)
 def nextpow2(integer: int):
     return 1 << (integer - 1).bit_length()
-
-
-# * factories *
-from navtools.signals import diy, gps
-
 
 
 def get_signal_properties(signal_name: str):

@@ -576,13 +576,12 @@ def ecef2lla(xyz: np.ndarray) -> np.ndarray:
   V = (np.sqrt(D) - Q)**(1/3) - (np.sqrt(D) + Q)**(1/3)                           # (Groves C.34)
   G = 0.5 * (np.sqrt(E*E + V) + E)                                                # (Groves C.35)
   T = np.sqrt( G*G + ((F - V*G) / (2*G - E)) ) - G                                # (Groves C.36)
-  phi = np.sign(z) * np.arctan( (1 - T*T) / (2*T*np.sqrt(1 - WGS84_E2)) )               # (Groves C.37)
-  h = (beta - WGS84_R0*T)*np.cos(phi) + (z - np.sign(z)*WGS84_R0*np.sqrt(1 - WGS84_E2))*np.sin(phi) # (Groves C.38)
+  phi = np.sign(z) * np.arctan( (1 - T*T) / (2*T*np.sqrt(1 - WGS84_E2)) )         # (Groves C.37)
+  h = (beta - WGS84_R0*T)*np.cos(phi) + (z - np.sign(z)*WGS84_R0*                 # (Groves C.38)
+        np.sqrt(1 - WGS84_E2))*np.sin(phi) 
 
   # combine lla
   lamb = np.arctan2(y, x)
-  lla = np.array([phi, lamb, h], dtype=np.double)
-  
   return np.array([phi, lamb, h], dtype=np.double)
 
 
