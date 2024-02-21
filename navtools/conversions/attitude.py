@@ -239,7 +239,7 @@ def quat2dcm(q: np.ndarray) -> np.ndarray:
 #* ============================================================================================== *#
 # === WRAPTO2PI ===
 @njit(cache=True, fastmath=True)
-def wrapTo2Pi(v1: np.ndarray) -> np.ndarray:
+def wrapTo2Pi(v1: float) -> float:
   """Wraps angles to [0, 2*pi]
 
   Parameters
@@ -252,15 +252,13 @@ def wrapTo2Pi(v1: np.ndarray) -> np.ndarray:
   np.ndarray
       Nx1 vector of normalized angles [radians]
   """
-  i = v1 > 0
-  v1 = np.mod(v1, two_pi)
-  v2 = v1[(v1 == 0) and i] = two_pi
-  return v1
+
+  return np.mod(v1, two_pi)
 
 
 # === WRAPTO2PI ===
 @njit(cache=True, fastmath=True)
-def wrapToPi(v1: np.ndarray) -> np.ndarray:
+def wrapToPi(v1: float) -> float:
   """Wraps angles to [-pi, pi]
 
   Parameters
@@ -273,8 +271,9 @@ def wrapToPi(v1: np.ndarray) -> np.ndarray:
   np.ndarray
       Nx1 vector of normalized angles [radians]
   """
-  i = (v1 < -np.pi) or (np.pi < v1)
-  v1[i] = wrapTo2Pi(v1[i] + np.pi) - np.pi
+  v1 = wrapTo2Pi(v1)
+  if v1 > np.pi:
+    v1 -= two_pi
   return v1
 
 
@@ -293,16 +292,16 @@ def wrapEulerAngles(e: np.ndarray) -> np.ndarray:
   np.ndarray
       3x1 vector of normalized euler angles (roll-pitch-yaw) [radians]
   """
-  if e[1] > half_pi:
-    e[1]= np.pi - e[1]
-    e[0] = wrapToPi(e[0] + np.pi)
-    e[2] = wrapToPi(e[2] + np.pi)
-  elif e[1] < -half_pi:
-    e[1] = -np.pi - e[1]
-    e[0] = wrapToPi(e[0] + np.pi)
-    e[2] = wrapToPi(e[2] + np.pi)
-  else:
-    e[0] = wrapToPi(e[0])
-    e[2] = wrapToPi(e[2])
+  e1, e2, e3 = e
+  if e2 > half_pi:
+    e2 = np.pi - e2
+    e1 = e1 + np.pi
+    e3 = e3 + np.pi
+  elif e2 < -half_pi:
+    e2 = -np.pi - e2
+    e1 = e1 + np.pi
+    e3 = e3 + np.pi
+  e1 = wrapToPi(e1)
+  e3 = wrapToPi(e3)
   
-  return e
+  return np.array([e1, e2, e3])
