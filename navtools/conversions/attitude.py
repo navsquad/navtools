@@ -67,10 +67,10 @@ def euler2quat(e: np.ndarray) -> np.ndarray:
   """
   sinX, sinY, sinZ = np.sin(e)
   cosX, cosY, cosZ = np.cos(e)
-  q = np.array([[cosZ*cosY*cosX + sinZ*sinY*sinX], \
-                [cosZ*cosY*sinX - sinZ*sinY*cosX], \
-                [cosZ*sinY*cosX + sinZ*cosY*sinX], \
-                [sinZ*cosY*cosX - cosZ*sinY*sinX]], 
+  q = np.array([cosZ*cosY*cosX + sinZ*sinY*sinX, \
+                cosZ*cosY*sinX - sinZ*sinY*cosX, \
+                cosZ*sinY*cosX + sinZ*cosY*sinX, \
+                sinZ*cosY*cosX - cosZ*sinY*sinX], 
                dtype=np.double)
   return q
 
@@ -185,8 +185,21 @@ def dcm2quat(C: np.ndarray) -> np.ndarray:
   np.ndarray
       4x1 quaternion
   """
-  q = euler2quat(dcm2euler(C))
-  return q
+  # q = euler2quat(dcm2euler(C))
+  q_w = 0.5 * np.sqrt(1 + np.trace(C))
+  if q_w > 0.01:
+      q_w_4 = 4 * q_w
+      q_x = (C[2, 1] - C[1, 2]) / q_w_4
+      q_y = (C[0, 2] - C[2, 0]) / q_w_4
+      q_z = (C[1, 0] - C[0, 1]) / q_w_4
+  else:
+      q_x = 0.5 * np.sqrt(1 + C[0, 0] - C[1, 1] - C[2, 2])
+      q_x_4 = 4 * q_x
+      q_w = (C[2, 1] - C[1, 2]) / q_x_4
+      q_y = (C[0, 1] + C[1, 0]) / q_x_4
+      q_z = (C[0, 2] + C[2, 0]) / q_x_4
+
+  return np.array([q_w, q_x, q_y, q_z])
 
 
 #* ============================================================================================== *#
