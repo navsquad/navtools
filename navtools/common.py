@@ -164,7 +164,7 @@ def nextpow2(integer: int):
     return 1 << (integer - 1).bit_length()
 
 # * factories *
-from navtools.signals.gen import diy, gps
+from navtools.signals.gen import diy, gps, soop
 
 def get_signal_properties(signal_name: str):
     """factory function that retrieves requested signal properties
@@ -179,7 +179,14 @@ def get_signal_properties(signal_name: str):
     _type_
         signal properties
     """
-    SIGNALS = {"gpsl1ca": gps.L1CA, "freedom": diy.FREEDOM, "auburn": diy.AUBURN}
+    SIGNALS = {"gpsl1ca": gps.L1CA, 
+               "freedom": diy.FREEDOM, 
+               "auburn": diy.AUBURN,
+               "iridium": soop.IRIDIUM,
+               "orbcomm": soop.ORBCOMM,
+               "globalstar": soop.GLOBALSTAR,
+               "oneweb": soop.ONEWEB,
+               "starlink": soop.STARLINK}
 
     signal_name = "".join([i for i in signal_name if i.isalnum()]).casefold()
     properties = SIGNALS.get(signal_name, gps.L1CA)  # defaults to gps-l1ca
