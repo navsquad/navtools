@@ -1,4 +1,4 @@
-'''
+"""
 |=========================================== common.py ============================================|
 |                                                                                                  |
 |  Property of NAVSQUAD (UwU). Unauthorized copying of this file via any medium would be super     |
@@ -13,11 +13,14 @@
 |  @date     January 2024                                                                          |
 |                                                                                                  |
 |==================================================================================================|
-'''
+"""
+
+__all__ = ["ensure_exist"]
 
 import os
+
 
 # === ENSURE_EXIST ===
 # make sure directory chosen exists
 def ensure_exist(path):
-  os.makedirs(os.path.realpath(path), exist_ok=True)
+    os.makedirs(os.path.realpath(path), exist_ok=True)

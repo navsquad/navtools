@@ -1,4 +1,4 @@
-'''
+"""
 |======================================== signal_file.py ==========================================|
 |                                                                                                  |
 |  Property of NAVSQUAD (UwU). Unauthorized copying of this file via any medium would be super     |
@@ -13,53 +13,56 @@
 |  @date     January 2024                                                                          |
 |                                                                                                  |
 |==================================================================================================|
-'''
+"""
+
+__all__ = ["SignalFile"]
 
 import numpy as np
 from .common import ensure_exist
 
+
 class SignalFile:
-  # === init === 
-  # SignalFile constructor
-  def __init__(self, filename: str, dtype: str, is_complex: bool):
-    ensure_exist(filename)
-    self.fid_ = open(filename, 'rb+')
-    self.dtype_ = np.dtype(dtype)
-    self.dsize_ = self.dtype_.itemsize
-    self.is_complex_ = is_complex
+    # === init ===
+    # SignalFile constructor
+    def __init__(self, filename: str, dtype: str, is_complex: bool):
+        ensure_exist(filename)
+        self.fid_ = open(filename, "rb+")
+        self.dtype_ = np.dtype(dtype)
+        self.dsize_ = self.dtype_.itemsize
+        self.is_complex_ = is_complex
 
-  # === del ===
-  # signal file destructor
-  def __del__(self):
-    self.fid_.close()
+    # === del ===
+    # signal file destructor
+    def __del__(self):
+        self.fid_.close()
 
-  # === fread ===
-  # read data from file
-  def fread(self, n_samp: int):
-    if self.is_complex_:
-      stream = np.fromfile(self.fid_, self.dtype_, 2*n_samp)
-      stream = stream[::2] + 1j*stream[1::2]
-      # stream = stream.astype(np.float32).view(np.complex64)
-    else:
-      stream = np.fromfile(self.fid_, self.dtype_, n_samp)
-    return stream
-  
-  # === fseek ===
-  # seek from beginning of file
-  def fseek(self, samp, offset):
-    if self.is_complex_:
-      self.fid_.seek(2*self.dsize_*(samp+offset), 0)
-    else:
-      self.fid_.seek(samp+offset, 0)
+    # === fread ===
+    # read data from file
+    def fread(self, n_samp: int):
+        if self.is_complex_:
+            stream = np.fromfile(self.fid_, self.dtype_, 2 * n_samp)
+            stream = stream[::2] + 1j * stream[1::2]
+            # stream = stream.astype(np.float32).view(np.complex64)
+        else:
+            stream = np.fromfile(self.fid_, self.dtype_, n_samp)
+        return stream
 
-  # === ftell ===
-  # retrieve sample from beginning of file
-  def ftell(self):
-    if self.is_complex_:
-      loc = int(self.fid_.tell() / 2 / self.dsize_)
-    else:
-      loc = int(self.fid_.tell() / self.dsize_)
-    return loc
+    # === fseek ===
+    # seek from beginning of file
+    def fseek(self, samp, offset):
+        if self.is_complex_:
+            self.fid_.seek(2 * self.dsize_ * (samp + offset), 0)
+        else:
+            self.fid_.seek(samp + offset, 0)
+
+    # === ftell ===
+    # retrieve sample from beginning of file
+    def ftell(self):
+        if self.is_complex_:
+            loc = int(self.fid_.tell() / 2 / self.dsize_)
+        else:
+            loc = int(self.fid_.tell() / self.dsize_)
+        return loc
 
 
 # class SignalFile:  # TODO: correct handling of real-valued data

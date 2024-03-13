@@ -1,4 +1,4 @@
-'''
+"""
 |======================================== coordinates.py ==========================================|
 |                                                                                                  |
 |  Property of NAVSQUAD (UwU). Unauthorized copying of this file via any medium would be super     |
@@ -14,7 +14,9 @@
 |  @date     January 2024                                                                          |
 |                                                                                                  |
 |==================================================================================================|
-'''
+"""
+
+__all__ = ["cn02snr", "snr2cn0"]
 
 import numpy as np
 from numba import njit
@@ -22,46 +24,46 @@ from numba import njit
 
 @njit(cache=True, fastmath=True)
 def cn02snr(cn0: float, front_end_bw: float = 4e6, noise_figure: float = 0.0) -> float:
-  """Convert Carrier-to-Noise Ratio into raw Signal-to-Noise Ratio
+    """Convert Carrier-to-Noise Ratio into raw Signal-to-Noise Ratio
 
-  Parameters
-  ----------
-  cn0 : float
-      Carrier-to-Noise ratio [dB/Hz]
-  front_end_bw : float, optional
-      Front end receiver bandwidth [Hz], by default 4e6
-  noise_figure : float, optional
-      Noise losses [W], by default 0.0
+    Parameters
+    ----------
+    cn0 : float
+        Carrier-to-Noise ratio [dB/Hz]
+    front_end_bw : float, optional
+        Front end receiver bandwidth [Hz], by default 4e6
+    noise_figure : float, optional
+        Noise losses [W], by default 0.0
 
-  Returns
-  -------
-  float
-      Signal-to-Noise ratio [dB]
-  """
-  snr = cn0 - 10 * np.log10(front_end_bw) - noise_figure  # dB
-  return snr
+    Returns
+    -------
+    float
+        Signal-to-Noise ratio [dB]
+    """
+    snr = cn0 - 10 * np.log10(front_end_bw) - noise_figure  # dB
+    return snr
 
 
 @njit(cache=True, fastmath=True)
 def snr2cn0(snr: float, front_end_bw: float = 4e6, noise_figure: float = 0.0) -> float:
-  """Convert raw Signal-to-Noise Ratio into Carrier-to-Noise Ratio
+    """Convert raw Signal-to-Noise Ratio into Carrier-to-Noise Ratio
 
-  Parameters
-  ----------
-  snr : float
-      Signal-to-Noise ratio [dB]
-  front_end_bw : float, optional
-      Front end receiver bandwidth [Hz], by default 4e6
-  noise_figure : float, optional
-      Noise losses [W], by default 0.0
+    Parameters
+    ----------
+    snr : float
+        Signal-to-Noise ratio [dB]
+    front_end_bw : float, optional
+        Front end receiver bandwidth [Hz], by default 4e6
+    noise_figure : float, optional
+        Noise losses [W], by default 0.0
 
-  Returns
-  -------
-  float
-      Carrier-to-Noise ratio [dB/Hz]
-  """
-  cn0 = snr + 10 * np.log10(front_end_bw) + noise_figure  # dB-Hz
-  return cn0
+    Returns
+    -------
+    float
+        Carrier-to-Noise ratio [dB/Hz]
+    """
+    cn0 = snr + 10 * np.log10(front_end_bw) + noise_figure  # dB-Hz
+    return cn0
 
 
 # @njit(cache=True, fastmath=True)

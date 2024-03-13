@@ -1,4 +1,4 @@
-'''
+"""
 |===================================== radii_of_curvature.py ======================================|
 |                                                                                                  |
 |  Property of NAVSQUAD (UwU). Unauthorized copying of this file via any medium would be super     |
@@ -14,96 +14,98 @@
 |  @date     January 2024                                                                          |
 |                                                                                                  |
 |==================================================================================================|
-'''
+"""
+
+__all__ = ["transverseRadius", "meridianRadius", "geocentricRadius", "radiiOfCurvature"]
 
 import numpy as np
 from numba import njit
 from navtools.constants import WGS84_R0, WGS84_E2
 
+
 # === TRANSVERSERADIUS ===
 @njit(cache=True, fastmath=True)
 def transverseRadius(phi: np.float64) -> np.float64:
-  """Calculates the transverse radius relative to user latitude
+    """Calculates the transverse radius relative to user latitude
 
-  Parameters
-  ----------
-  phi : np.float64
-      Latitude [rad]
+    Parameters
+    ----------
+    phi : np.float64
+        Latitude [rad]
 
-  Returns
-  -------
-  np.float64
-      Earth's transverse radius at Latitude
-  """
-  sinPhi2 = np.sin(phi)**2
-  t = 1 - WGS84_E2*sinPhi2
-  return WGS84_R0 / np.sqrt(t)
+    Returns
+    -------
+    np.float64
+        Earth's transverse radius at Latitude
+    """
+    sinPhi2 = np.sin(phi) ** 2
+    t = 1 - WGS84_E2 * sinPhi2
+    return WGS84_R0 / np.sqrt(t)
 
 
 # === MERIDIANRADIUS ===
 @njit(cache=True, fastmath=True)
 def meridianRadius(phi: np.float64) -> np.float64:
-  """Calculates the meridian radius relative to user latitude
+    """Calculates the meridian radius relative to user latitude
 
-  Parameters
-  ----------
-  phi : np.float64
-      Latitude [rad]
+    Parameters
+    ----------
+    phi : np.float64
+        Latitude [rad]
 
-  Returns
-  -------
-  np.float64
-      Earth's meridian radius at Latitude
-  """
-  sinPhi2 = np.sin(phi)**2
-  t = 1 - WGS84_E2*sinPhi2
-  return WGS84_R0 * (1 - WGS84_E2) / (t**1.5)
+    Returns
+    -------
+    np.float64
+        Earth's meridian radius at Latitude
+    """
+    sinPhi2 = np.sin(phi) ** 2
+    t = 1 - WGS84_E2 * sinPhi2
+    return WGS84_R0 * (1 - WGS84_E2) / (t**1.5)
 
 
 # === GEOCENTRICRADIUS ===
 @njit(cache=True, fastmath=True)
 def geocentricRadius(phi: np.float64) -> np.float64:
-  """Calculates the geocentric radius relative to the user latitude
+    """Calculates the geocentric radius relative to the user latitude
 
-  Parameters
-  ----------
-  phi : np.float64
-      Latitude [rad]
+    Parameters
+    ----------
+    phi : np.float64
+        Latitude [rad]
 
-  Returns
-  -------
-  np.float64
-      Earth's geocentric radius at Latitude
-  """
-  sinPhi2 = np.sin(phi)**2
-  cosPhi2 = np.cos(phi)**2
-  t = 1 - WGS84_E2*sinPhi2
-  Re = WGS84_R0 / np.sqrt(t)
-  return Re * np.sqrt(cosPhi2 + (1 - WGS84_E2)**2 * sinPhi2)
+    Returns
+    -------
+    np.float64
+        Earth's geocentric radius at Latitude
+    """
+    sinPhi2 = np.sin(phi) ** 2
+    cosPhi2 = np.cos(phi) ** 2
+    t = 1 - WGS84_E2 * sinPhi2
+    Re = WGS84_R0 / np.sqrt(t)
+    return Re * np.sqrt(cosPhi2 + (1 - WGS84_E2) ** 2 * sinPhi2)
 
 
 # === RADIIOFCURVATURE ===
 @njit(cache=True, fastmath=True)
 def radiiOfCurvature(phi: np.float64) -> tuple[np.float64, np.float64, np.float64]:
-  """Calculates the transverse, meridian, and geocentric radii or curvature
+    """Calculates the transverse, meridian, and geocentric radii or curvature
 
-  Parameters
-  ----------
-  phi : _type_
-      Latitude [rad]
+    Parameters
+    ----------
+    phi : _type_
+        Latitude [rad]
 
-  Returns
-  -------
-  tuple[np.float64, np.float64, np.float64]
-      Re:     Earth's transverse radius at Latitude [m]
-      Rn:     Earth's meridian radius at Latitude [m]
-      r_es_e: Earth's geocentric radius at Latitude [m]
-  """
-  sinPhi2 = np.sin(phi)**2
-  cosPhi2 = np.cos(phi)**2
-  t = 1 - WGS84_E2*sinPhi2
-  Re = WGS84_R0 / np.sqrt(t)
-  Rn = WGS84_R0 * (1- WGS84_E2) / (t**1.5)
-  r_es_e = Re * np.sqrt(cosPhi2 + (1 - WGS84_E2)**2 * sinPhi2)
-  return Re, Rn, r_es_e
-  
+    Returns
+    -------
+    tuple[np.float64, np.float64, np.float64]
+        Re:     Earth's transverse radius at Latitude [m]
+        Rn:     Earth's meridian radius at Latitude [m]
+        r_es_e: Earth's geocentric radius at Latitude [m]
+    """
+    sinPhi2 = np.sin(phi) ** 2
+    cosPhi2 = np.cos(phi) ** 2
+    t = 1 - WGS84_E2 * sinPhi2
+    Re = WGS84_R0 / np.sqrt(t)
+    Rn = WGS84_R0 * (1 - WGS84_E2) / (t**1.5)
+    r_es_e = Re * np.sqrt(cosPhi2 + (1 - WGS84_E2) ** 2 * sinPhi2)
+    return Re, Rn, r_es_e

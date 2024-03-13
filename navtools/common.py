@@ -1,3 +1,20 @@
+__all__ = [
+    "compute_visibility_status",
+    "compute_az_and_el",
+    "compute_range_and_unit_vector",
+    "compute_range_rate",
+    "get_bit_value",
+    "set_bit_value",
+    "xor_register_taps",
+    "msequence",
+    "nextpow2",
+    "get_signal_properties",
+    "get_correlator_model",
+    "smart_transpose",
+    "pad_list",
+    "atleast_1d",
+]
+
 import numpy as np
 from numba import njit, generated_jit, types
 from numpy.typing import ArrayLike
@@ -54,8 +71,8 @@ def compute_az_and_el(rx_pos: np.array, emitter_pos: np.array) -> tuple[float, f
     lla = ecef2lla(rx_pos)
     enu = ecef2enu(emitter_pos, lla)
     r = np.linalg.norm(enu)
-    az = np.arctan2(enu[0], enu[1])
-    el = np.arcsin(enu[2] / r)
+    az = np.rad2deg(np.arctan2(enu[0], enu[1]))
+    el = np.rad2deg(np.arcsin(enu[2] / r))
 
     return az, el
 
@@ -163,8 +180,10 @@ def msequence(nbits: int, taps: ArrayLike, state: int = None):
 def nextpow2(integer: int):
     return 1 << (integer - 1).bit_length()
 
+
 # * factories *
 from navtools.signals.gen import diy, gps, soop
+
 
 def get_signal_properties(signal_name: str):
     """factory function that retrieves requested signal properties
@@ -179,14 +198,20 @@ def get_signal_properties(signal_name: str):
     _type_
         signal properties
     """
-    SIGNALS = {"gpsl1ca": gps.L1CA, 
-               "freedom": diy.FREEDOM, 
-               "auburn": diy.AUBURN,
-               "iridium": soop.IRIDIUM,
-               "orbcomm": soop.ORBCOMM,
-               "globalstar": soop.GLOBALSTAR,
-               "oneweb": soop.ONEWEB,
-               "starlink": soop.STARLINK}
+    SIGNALS = {
+        "gpsl1ca": gps.L1CA,
+        "freedom": diy.FREEDOM,
+        "auburn": diy.AUBURN,
+        "iridium": soop.IRIDIUM,
+        "orbcomm": soop.ORBCOMM,
+        "globalstar": soop.GLOBALSTAR,
+        "oneweb": soop.ONEWEB,
+        "starlink": soop.STARLINK,
+        "buoy": soop.BUOY,
+        # "cellular": soop.CELLULAR,
+        # "am_radio": soop.AM_RADIO,
+        # "fm_radio": soop.FM_RADIO,
+    }
 
     signal_name = "".join([i for i in signal_name if i.isalnum()]).casefold()
     properties = SIGNALS.get(signal_name, gps.L1CA)  # defaults to gps-l1ca
