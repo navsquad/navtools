@@ -506,7 +506,7 @@ def lla2aer(lla_t: np.ndarray, lla_r: np.ndarray) -> np.ndarray:
     enu = lla2enu(lla_t, lla_r)
     r = np.linalg.norm(enu)
     az = np.arctan2(enu[0], enu[1])
-    el = np.arcsin(enu[2], r)
+    el = np.arcsin(enu[2] / r)
     return np.array([az, el, r], dtype=np.double)
 
 
@@ -673,9 +673,7 @@ def ecef2lla(xyz: np.ndarray) -> np.ndarray:
     V = (np.sqrt(D) - Q) ** (1 / 3) - (np.sqrt(D) + Q) ** (1 / 3)  # (Groves C.34)
     G = 0.5 * (np.sqrt(E * E + V) + E)  # (Groves C.35)
     T = np.sqrt(G * G + ((F - V * G) / (2 * G - E))) - G  # (Groves C.36)
-    phi = np.sign(z) * np.arctan(
-        (1 - T * T) / (2 * T * np.sqrt(1 - WGS84_E2))
-    )  # (Groves C.37)
+    phi = np.sign(z) * np.arctan((1 - T * T) / (2 * T * np.sqrt(1 - WGS84_E2)))  # (Groves C.37)
     h = (beta - WGS84_R0 * T) * np.cos(phi) + (
         z - np.sign(z) * WGS84_R0 * np.sqrt(1 - WGS84_E2)  # (Groves C.38)
     ) * np.sin(phi)
@@ -750,7 +748,7 @@ def ecef2aer(ecef_t: np.ndarray, ecef_r: np.ndarray) -> np.ndarray:
     enu = ecef2enu(ecef_t, lla0)
     r = np.linalg.norm(enu)
     az = np.arctan2(enu[0], enu[1])
-    el = np.arcsin(enu[2], r)
+    el = np.arcsin(enu[2] / r)
     return np.array([az, el, r], dtype=np.double)
 
 
@@ -974,9 +972,7 @@ def eci2ecefv(r_ib_i: np.ndarray, v_ib_i: np.ndarray, dt: float) -> np.ndarray:
 
 # === ECI2NEDV ===
 @njit(cache=True, fastmath=True)
-def eci2nedv(
-    r_ib_i: np.ndarray, v_ib_i: np.ndarray, lla0: np.ndarray, dt: float
-) -> np.ndarray:
+def eci2nedv(r_ib_i: np.ndarray, v_ib_i: np.ndarray, lla0: np.ndarray, dt: float) -> np.ndarray:
     """Converts Earth-Centered-Inertial to North-East-Down velocity
 
     Parameters
@@ -1001,9 +997,7 @@ def eci2nedv(
 
 # === ECI2ENUV ===
 @njit(cache=True, fastmath=True)
-def eci2enuv(
-    r_ib_i: np.ndarray, v_ib_i: np.ndarray, lla0: np.ndarray, dt: float
-) -> np.ndarray:
+def eci2enuv(r_ib_i: np.ndarray, v_ib_i: np.ndarray, lla0: np.ndarray, dt: float) -> np.ndarray:
     """Converts Earth-Centered-Inertial to East-North-Up velocity
 
     Parameters
@@ -1095,9 +1089,7 @@ def ecef2enuv(v_eb_e: np.ndarray, lla0: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------------------------------------------#
 # === NED2ECIV ===
 @njit(cache=True, fastmath=True)
-def ned2eciv(
-    ned: np.ndarray, v_ned: np.ndarray, lla0: np.ndarray, dt: float
-) -> np.ndarray:
+def ned2eciv(ned: np.ndarray, v_ned: np.ndarray, lla0: np.ndarray, dt: float) -> np.ndarray:
     """Converts North-East-Down to East-Centered-Inertial velocity
 
     Parameters
@@ -1146,9 +1138,7 @@ def ned2ecefv(v_ned: np.ndarray, lla0: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------------------------------------------#
 # === ENU2ECIV ===
 @njit(cache=True, fastmath=True)
-def enu2eciv(
-    r_nb_n: np.ndarray, v_nb_n: np.ndarray, lla0: np.ndarray, dt: float
-) -> np.ndarray:
+def enu2eciv(r_nb_n: np.ndarray, v_nb_n: np.ndarray, lla0: np.ndarray, dt: float) -> np.ndarray:
     """Converts East-North-Up to East-Centered-Inertial velocity
 
     Parameters
@@ -1255,9 +1245,7 @@ def eci2nedw(
     trans = 1 - WGS84_E2 * sinPhi * sinPhi
     Re = WGS84_R0 / np.sqrt(trans)
     Rn = WGS84_R0 * (1 - WGS84_E2) / trans**1.5
-    w_en_n = np.array(
-        [ve / (Re + h), -vn / (Rn + h), -ve * np.tan(phi) / (Re + h)], dtype=np.double
-    )
+    w_en_n = np.array([ve / (Re + h), -vn / (Rn + h), -ve * np.tan(phi) / (Re + h)], dtype=np.double)
 
     return C_i_n @ (w_ib_i - omega_ie) - w_en_n
 
@@ -1300,9 +1288,7 @@ def eci2enuw(
     trans = 1 - WGS84_E2 * sinPhi * sinPhi
     Re = WGS84_R0 / np.sqrt(trans)
     Rn = WGS84_R0 * (1 - WGS84_E2) / trans**1.5
-    w_en_n = np.array(
-        [ve / (Re + h), -vn / (Rn + h), -ve * np.tan(phi) / (Re + h)], dtype=np.double
-    )
+    w_en_n = np.array([ve / (Re + h), -vn / (Rn + h), -ve * np.tan(phi) / (Re + h)], dtype=np.double)
 
     return C_i_n @ (w_ib_i - omega_ie) - w_en_n
 
@@ -1374,9 +1360,7 @@ def ecef2enuw(w_eb_e: np.ndarray, lla0: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------------------------------------------#
 # === NED2ECIW ===
 @njit(cache=True, fastmath=True)
-def ned2eciw(
-    w_nb_n: np.ndarray, v_nb_n: np.ndarray, lla0: np.ndarray, dt: float
-) -> np.ndarray:
+def ned2eciw(w_nb_n: np.ndarray, v_nb_n: np.ndarray, lla0: np.ndarray, dt: float) -> np.ndarray:
     """Converts North-East-Down to East-Centered-Inertial angular velocity
 
     Parameters
@@ -1404,9 +1388,7 @@ def ned2eciw(
     trans = 1 - WGS84_E2 * sinPhi * sinPhi
     Re = WGS84_R0 / np.sqrt(trans)
     Rn = WGS84_R0 * (1 - WGS84_E2) / trans**1.5
-    w_en_n = np.array(
-        [ve / (Re + h), -vn / (Rn + h), -ve * np.tan(phi) / (Re + h)], dtype=np.double
-    )
+    w_en_n = np.array([ve / (Re + h), -vn / (Rn + h), -ve * np.tan(phi) / (Re + h)], dtype=np.double)
 
     return C_n_i @ (w_nb_n + w_en_n) + omega_ie
 
@@ -1435,9 +1417,7 @@ def ned2ecefw(w_eb_e: np.ndarray, lla0: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------------------------------------------#
 # === ENU2ECIW ===
 @njit(cache=True, fastmath=True)
-def enu2eciw(
-    w_nb_n: np.ndarray, v_nb_n: np.ndarray, lla0: np.ndarray, dt: float
-) -> np.ndarray:
+def enu2eciw(w_nb_n: np.ndarray, v_nb_n: np.ndarray, lla0: np.ndarray, dt: float) -> np.ndarray:
     """Converts East-North-Up to East-Centered-Inertial angular velocity
 
     Parameters
@@ -1465,9 +1445,7 @@ def enu2eciw(
     trans = 1 - WGS84_E2 * sinPhi * sinPhi
     Re = WGS84_R0 / np.sqrt(trans)
     Rn = WGS84_R0 * (1 - WGS84_E2) / trans**1.5
-    w_en_n = np.array(
-        [ve / (Re + h), -vn / (Rn + h), -ve * np.tan(phi) / (Re + h)], dtype=np.double
-    )
+    w_en_n = np.array([ve / (Re + h), -vn / (Rn + h), -ve * np.tan(phi) / (Re + h)], dtype=np.double)
 
     return C_n_i @ (w_nb_n + w_en_n) + omega_ie
 
@@ -1497,9 +1475,7 @@ def enu2ecefw(w_eb_e: np.ndarray, lla0: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------------------------------------------#
 # === ECI2ECEFA ===
 @njit(cache=True, fastmath=True)
-def eci2ecefa(
-    r_ib_i: np.ndarray, v_ib_i: np.ndarray, a_ib_i: np.ndarray, dt: float
-) -> np.ndarray:
+def eci2ecefa(r_ib_i: np.ndarray, v_ib_i: np.ndarray, a_ib_i: np.ndarray, dt: float) -> np.ndarray:
     """Converts Earth-Centered-Inertial to Earth-Centered-Earth-Fixed acceleration
 
     Parameters
@@ -1591,9 +1567,7 @@ def eci2enua(
 # --------------------------------------------------------------------------------------------------#
 # === ECEF2ECIA ===
 @njit(cache=True, fastmath=True)
-def ecef2ecia(
-    r_eb_e: np.ndarray, v_eb_e: np.ndarray, a_eb_e: np.ndarray, dt: float
-) -> np.ndarray:
+def ecef2ecia(r_eb_e: np.ndarray, v_eb_e: np.ndarray, a_eb_e: np.ndarray, dt: float) -> np.ndarray:
     """Converts Earth-Centered-Earth-Fixed to Earth-Centered-Inertial acceleration
 
     Parameters
@@ -1703,10 +1677,7 @@ def ned2ecia(
     C_e_i = ecef2eciDcm(lla0, dt)
     a_eb_n = C_n_e @ a_nb_n
     v_eb_n = C_n_e @ v_nb_n
-    return (
-        C_n_i @ (a_eb_n + 2 @ OMEGA_ie_n @ v_eb_n)
-        + C_e_i @ OMEGA_ie @ OMEGA_ie @ r_eb_e
-    )
+    return C_n_i @ (a_eb_n + 2 @ OMEGA_ie_n @ v_eb_n) + C_e_i @ OMEGA_ie @ OMEGA_ie @ r_eb_e
 
 
 # === NED2ECEFA ===
@@ -1775,10 +1746,7 @@ def enu2ecia(
     C_e_i = ecef2eciDcm(lla0, dt)
     a_eb_n = C_n_e @ a_nb_n
     v_eb_n = C_n_e @ v_nb_n
-    return (
-        C_n_i @ (a_eb_n + 2 @ OMEGA_ie_n @ v_eb_n)
-        + C_e_i @ OMEGA_ie @ OMEGA_ie @ r_eb_e
-    )
+    return C_n_i @ (a_eb_n + 2 @ OMEGA_ie_n @ v_eb_n) + C_e_i @ OMEGA_ie @ OMEGA_ie @ r_eb_e
 
 
 # === ENU2ECEFA ===

@@ -58,6 +58,6 @@ STARLINK = SignalOfOpportunity(
 BUOY = SignalOfOpportunity(
     fcarrier=162.475e6,  # 162.400, 162.425, 162.450, 162.475, 162.500, 162.525, 162.550 MHz
     wavelength=SPEED_OF_LIGHT / 162.475e6,
-    transmit_power=10,
-    transmit_antenna_gain=10,
+    transmit_power=1,
+    transmit_antenna_gain=5,
 )

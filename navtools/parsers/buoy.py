@@ -55,9 +55,7 @@ class Buoy:
             ECEF position and velocities
         """
         if hasattr(times, "__len__"):
-            relative_times = np.array(
-                [(t - self.start_time).total_seconds() for t in times]
-            )
+            relative_times = np.array([(t - self.start_time).total_seconds() for t in times])
         else:
             relative_times = (times - self.start_time).total_seconds()
         tx_pos = self.spline(relative_times)
@@ -66,23 +64,17 @@ class Buoy:
 
 
 class BuoyParser:
-    def __init__(
-        self, start_time: datetime, stop_time: datetime, filename: Path | str = None
-    ):
+    def __init__(self, start_time: datetime, stop_time: datetime, filename: Path | str = None):
         ensure_exist("/tmp/buoy/")
         self.__start_time = start_time
         self.__stop_time = stop_time
-        self.__start_time_prev_hr = start_time.replace(second=0, minute=0) - timedelta(
-            hours=1
-        )
+        self.__start_time_prev_hr = start_time.replace(second=0, minute=0) - timedelta(hours=1)
         self.__stop_time_next_day = ceilTime(stop_time, timedelta(days=1))
         self.__timedelta = stop_time - start_time
         self.__url_format = "%Y-%m-%dT%H%%3A%M%%3A%SZ"
         self.__str_format = "%Y-%m-%dT%H:%M:%SZ"
         if filename is None:
-            self.__out_filename = (
-                f"/tmp/buoy/BUOY_PARSER_{start_time.strftime('%Y%m%d-%H%M%S')}"
-            )
+            self.__out_filename = f"/tmp/buoy/BUOY_PARSER_{start_time.strftime('%Y%m%d-%H%M%S')}"
         else:
             self.__out_filename = filename
 
@@ -90,9 +82,7 @@ class BuoyParser:
         # grab data and put into dataframe
         if os.path.isfile(f"{self.__out_filename}.npz"):
             # data already parsed into spline
-            self.__buoy_splines = np.load(
-                f"{self.__out_filename}.npz", allow_pickle=True
-            )["data"]
+            self.__buoy_splines = np.load(f"{self.__out_filename}.npz", allow_pickle=True)["data"]
         else:
             if os.path.isfile(f"{self.__out_filename}.csv"):
                 # data already downloaded
@@ -129,9 +119,7 @@ class BuoyParser:
             buoy_time = (buoy_time - start) / second
 
             # grab ecef position
-            buoy_ecef_pos = np.array(
-                [buoys["X [m]"].values, buoys["Y [m]"].values, buoys["Z [m]"].values]
-            ).T
+            buoy_ecef_pos = np.array([buoys["X [m]"].values, buoys["Y [m]"].values, buoys["Z [m]"].values]).T
 
             # make sure there are the same number of points as in 'relative_time'
             # TODO: figure out other conditions of failure
@@ -208,9 +196,7 @@ class BuoyParser:
 
     def __remove_unnecessary_data(self, list_of_keys: list):
         # remove unnecessary time points
-        self.__buoy_df["Time [UTC]"] = pd.to_datetime(
-            self.__buoy_df["Time [UTC]"], format=self.__str_format
-        )
+        self.__buoy_df["Time [UTC]"] = pd.to_datetime(self.__buoy_df["Time [UTC]"], format=self.__str_format)
 
         idx = np.logical_and(
             self.__buoy_df["Time [UTC]"] >= self.__start_time_prev_hr,
@@ -223,9 +209,7 @@ class BuoyParser:
         idx = [
             i
             for i in self.__buoy_df.index
-            if any(
-                k.lower() in self.__buoy_df["Type"][i].casefold() for k in list_of_keys
-            )
+            if any(k.lower() in self.__buoy_df["Type"][i].casefold() for k in list_of_keys)
         ]
         self.__buoy_df = self.__buoy_df.iloc[idx]
         self.__buoy_df.reset_index(drop=True, inplace=True)
