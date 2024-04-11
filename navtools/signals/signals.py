@@ -53,11 +53,7 @@ def bpsk_correlator(
     acorr_magnitude = 1 - np.abs(chip_error - tap_spacing)
     acorr_magnitude = np.where(acorr_magnitude < 0, 0.0, acorr_magnitude)
 
-    correlator = (
-        amplitude
-        * acorr_magnitude
-        * np.exp(np.pi * 1j * (ferror * T + 2 * phase_error))
-    )
+    correlator = amplitude * acorr_magnitude * np.exp(np.pi * 1j * (2 * phase_error))
 
     inphase = np.real(correlator)
     quadrature = np.imag(correlator)
