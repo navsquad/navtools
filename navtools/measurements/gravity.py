@@ -49,9 +49,7 @@ def somigliana(phi: np.float64) -> np.float64:
         somigliana model gravity
     """
     sinPhi2 = np.sin(phi) ** 2
-    return 9.7803253359 * (
-        (1 + 0.001931853 * sinPhi2) / np.sqrt(1 - WGS84_E2 * sinPhi2)
-    )
+    return 9.7803253359 * ((1 + 0.001931853 * sinPhi2) / np.sqrt(1 - WGS84_E2 * sinPhi2))
 
 
 # === NEDG ===
@@ -80,11 +78,7 @@ def nedg(lla: np.ndarray) -> np.ndarray:
             * (
                 1
                 - (2 / WGS84_R0)
-                * (
-                    1
-                    + WGS84_F * (1 - 2 * sinPhi2)
-                    + (GNSS_OMEGA_EARTH**2 * WGS84_R0**2 * WGS84_RP / WGS84_MU)
-                )
+                * (1 + WGS84_F * (1 - 2 * sinPhi2) + (GNSS_OMEGA_EARTH**2 * WGS84_R0**2 * WGS84_RP / WGS84_MU))
                 * h
                 + (3 * h**2 / WGS84_R0**2)
             ),
@@ -115,23 +109,15 @@ def ecefg(r_eb_e: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         g = np.zeros(3)
     else:
         zeta = 5 * (z / mag_r) ** 2
-        M = np.array(
-            [(1.0 - zeta) * x, (1.0 - zeta) * y, (3.0 - zeta) * z], dtype=np.double
-        )
-        gamma = (
-            -WGS84_MU
-            / mag_r**3
-            * (r_eb_e + 1.5 * WGS84_J2 * (WGS84_R0 / mag_r) ** 2 * M)
-        )
-        g = gamma + GNSS_OMEGA_EARTH * GNSS_OMEGA_EARTH * np.array(
-            [x, y, 0.0], dtype=np.double
-        )
+        M = np.array([(1.0 - zeta) * x, (1.0 - zeta) * y, (3.0 - zeta) * z], dtype=np.double)
+        gamma = -WGS84_MU / mag_r**3 * (r_eb_e + 1.5 * WGS84_J2 * (WGS84_R0 / mag_r) ** 2 * M)
+        g = gamma + GNSS_OMEGA_EARTH**2 * np.array([x, y, 0.0], dtype=np.double)
     return g, gamma
 
 
 # === NED2ECEFG ===
 @njit(cache=True, fastmath=True)
-def ned2ecefg(r_eb_e: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def ned2ecefg(r_eb_e: np.ndarray, C_e_n: np.ndarray = None) -> tuple[np.ndarray, np.ndarray]:
     """Calculates gravity in the 'NAV' frame and rotates it to the 'ECEF' frame
 
     Parameters
@@ -147,9 +133,10 @@ def ned2ecefg(r_eb_e: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     lla = ecef2lla(r_eb_e)
     g_ned = nedg(lla)
-    C_n_e = ned2ecefDcm(lla)
+    if C_e_n is None:
+        C_n_e = ned2ecefDcm(lla)
+    else:
+        C_n_e = C_e_n.T
     g_ecef = C_n_e @ g_ned
-    gamma = g_ecef - GNSS_OMEGA_EARTH * GNSS_OMEGA_EARTH * np.array(
-        [r_eb_e[0], r_eb_e[1], 0.0], dtype=np.double
-    )
+    gamma = g_ecef - GNSS_OMEGA_EARTH**2 * np.array([r_eb_e[0], r_eb_e[1], 0.0], dtype=np.double)
     return g_ecef, gamma

@@ -123,9 +123,7 @@ def rot_x(phi: float) -> np.ndarray:
     """
     sinP = np.sin(phi)
     cosP = np.cos(phi)
-    R = np.array(
-        [[1.0, 0.0, 0.0], [0.0, cosP, -sinP], [0.0, sinP, cosP]], dtype=np.double
-    )
+    R = np.array([[1.0, 0.0, 0.0], [0.0, cosP, -sinP], [0.0, sinP, cosP]], dtype=np.double)
     return R
 
 
@@ -146,9 +144,7 @@ def rot_y(theta: float) -> np.ndarray:
     """
     sinT = np.sin(theta)
     cosT = np.cos(theta)
-    R = np.array(
-        [[cosT, 0.0, sinT], [0.0, 1.0, 0.0], [-sinT, 0.0, cosT]], dtype=np.double
-    )
+    R = np.array([[cosT, 0.0, sinT], [0.0, 1.0, 0.0], [-sinT, 0.0, cosT]], dtype=np.double)
     return R
 
 
@@ -169,9 +165,7 @@ def rot_z(psi: float) -> np.ndarray:
     """
     sinS = np.sin(psi)
     cosS = np.cos(psi)
-    R = np.array(
-        [[cosS, -sinS, 0.0], [sinS, cosS, 0.0], [0.0, 0.0, 1.0]], dtype=np.double
-    )
+    R = np.array([[cosS, -sinS, 0.0], [sinS, cosS, 0.0], [0.0, 0.0, 1.0]], dtype=np.double)
     return R
 
 
@@ -325,8 +319,12 @@ def wrapToPi(v1: float) -> float:
         Nx1 vector of normalized angles [radians]
     """
     v1 = wrapTo2Pi(v1)
-    if v1 > np.pi:
-        v1 -= two_pi
+    if isinstance(v1, float):
+        if v1 > np.pi:
+            v1 -= two_pi
+    else:
+        idx = np.nonzero(v1 > np.pi)[0]
+        v1[idx] -= two_pi
     return v1
 
 
