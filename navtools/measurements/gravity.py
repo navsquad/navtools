@@ -16,7 +16,7 @@
 |==================================================================================================|
 """
 
-__all__ = ["somigliana", "nedg", "ecefg", "ned2ecefg"]
+__all__ = ["somigliana", "nedg", "enug", "ecefg", "ned2ecefg"]
 
 import numpy as np
 from numba import njit
@@ -75,6 +75,40 @@ def nedg(lla: np.ndarray) -> np.ndarray:
             -8.08e-9 * h * np.sin(2 * phi),
             0.0,
             g0
+            * (
+                1
+                - (2 / WGS84_R0)
+                * (1 + WGS84_F * (1 - 2 * sinPhi2) + (GNSS_OMEGA_EARTH**2 * WGS84_R0**2 * WGS84_RP / WGS84_MU))
+                * h
+                + (3 * h**2 / WGS84_R0**2)
+            ),
+        ]
+    )
+
+
+# === NEDG ===
+@njit(cache=True, fastmath=True)
+def enug(lla: np.ndarray) -> np.ndarray:
+    """Calculates gravity in the 'NED' frame
+
+    Parameters
+    ----------
+    lla : np.ndarray
+        Latitude, longitude, height [rad, rad, m]
+
+    Returns
+    -------
+    np.ndarray
+        'NED' gravity
+    """
+    phi, lam, h = lla
+    sinPhi2 = np.sin(phi) ** 2
+    g0 = 9.7803253359 * ((1 + 0.001931853 * sinPhi2) / np.sqrt(1 - WGS84_E2 * sinPhi2))
+    return np.array(
+        [
+            0.0,
+            -8.08e-9 * h * np.sin(2 * phi),
+            -g0
             * (
                 1
                 - (2 / WGS84_R0)

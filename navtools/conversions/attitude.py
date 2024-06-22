@@ -11,7 +11,9 @@
 |            coordinate frames with the order. Assumes euler angles in the order 'roll-pitch-yaw'  |
 |            and DCMs with the order of 'ZYX'.                                                     |
 |  @ref      Principles of GNSS, Inertial, and Multisensor Integrated Navigation Systems           |
-|              - (2013) Paul D. Groves                                                             |
+|              - (2nd Ed. 2013) Paul D. Groves                                                     |
+|  @ref      Global Positioning Systems, Inertial Navigation, and Integration                      |
+|              - (2nd Ed. 2006) Mohinder S. Grewal, Lawrence R. Weill, Angus P. Andrews            |
 |  @author   Daniel Sturdivant <sturdivant20@gmail.com>                                            | 
 |  @date     January 2024                                                                          |
 |                                                                                                  |
@@ -43,8 +45,9 @@ half_pi = 0.5 * np.pi
 # * ============================================================================================== *#
 # === EULER2DCM ===
 @njit(cache=True, fastmath=True)
-def euler2dcm(e: np.ndarray) -> np.ndarray:
-    """Converts euler angles (roll-pitch-yaw) to corresponding 'ZYX' DCM
+def euler2dcm(e: np.ndarray, frame: str = "ned") -> np.ndarray:
+    """Converts euler angles (roll-pitch-yaw) to corresponding 'ZYX' DCM.
+       Returns body-to-nav DCM.
 
     Parameters
     ----------
@@ -56,30 +59,37 @@ def euler2dcm(e: np.ndarray) -> np.ndarray:
     np.ndarray
         3x3 'ZYX' direction cosine matrix
     """
-    sinP, sinT, sinS = np.sin(e)
-    cosP, cosT, cosS = np.cos(e)
-    C = np.array(
-        [
-            [cosT * cosS, cosT * sinS, -sinT],
+    Sr, Sp, Sy = np.sin(e)
+    Cr, Cp, Cy = np.cos(e)
+
+    # fmt: off
+    if frame.casefold() == "ned":
+        # C.104
+        C = np.array(
             [
-                sinP * sinT * cosS - cosP * sinS,
-                sinP * sinT * sinS + cosP * cosS,
-                cosT * sinP,
+                [Cp * Cy, Sr * Sp * Cy - Cr * Sy, Cr * Sp * Cy + Sr * Sy],
+                [Cp * Sy, Sr * Sp * Sy + Cr * Cy, Cr * Sp * Sy - Cy * Sr],
+                [    -Sp,                Cp * Sr,                Cp * Cr],
             ],
+            dtype=np.double,
+        )
+    elif frame.casefold() == "enu":
+        # C.93
+        C = np.array(
             [
-                sinT * cosP * cosS + sinS * sinP,
-                sinT * cosP * sinS - cosS * sinP,
-                cosT * cosP,
+                [Cp * Sy, Sr * Sp * Sy + Cr * Cy, Cr * Sp * Sy - Sr * Cy],
+                [Cp * Cy, Sr * Sp * Cy - Cr * Sy, Cr * Sp * Cy + Sr * Sy],
+                [     Sp,               -Sr * Cp,               -Cr * Cp],
             ],
-        ],
-        dtype=np.double,
-    )
+            dtype=np.double,
+        )
+    # fmt: on
     return C
 
 
 # === EULER2QUAT ===
 @njit(cache=True, fastmath=True)
-def euler2quat(e: np.ndarray) -> np.ndarray:
+def euler2quat(e: np.ndarray, frame: str = "ned") -> np.ndarray:
     """Converts euler angles (roll-pitch-yaw) to corresponding quaternion
 
     Parameters
@@ -92,17 +102,37 @@ def euler2quat(e: np.ndarray) -> np.ndarray:
     np.ndarray
         4x1 quaternion
     """
-    sinX, sinY, sinZ = np.sin(e)
-    cosX, cosY, cosZ = np.cos(e)
-    q = np.array(
-        [
-            cosZ * cosY * cosX + sinZ * sinY * sinX,
-            cosZ * cosY * sinX - sinZ * sinY * cosX,
-            cosZ * sinY * cosX + sinZ * cosY * sinX,
-            sinZ * cosY * cosX - cosZ * sinY * sinX,
-        ],
-        dtype=np.double,
-    )
+    # Groves 2.38
+    Sr, Sp = np.sin(e[:2] / 2.0)
+    Cr, Cp = np.cos(e[:2] / 2.0)
+    a = Sp * Cr
+    b = Cp * Sr
+    c = Sp * Sr
+    d = Cp * Cr
+    if frame.casefold() == "ned":
+        Cy = np.cos(e[2] / 2.0)
+        Sy = np.sin(e[2] / 2.0)
+        q = np.array(
+            [
+                Cy * d + Sy * c,
+                Cy * b - Sy * a,
+                Cy * a + Sy * b,
+                Sy * d - Cy * c,
+            ],
+            dtype=np.double,
+        )
+    elif frame.casefold() == "enu":
+        Cy_pi_4 = np.cos(e[2] / 2.0 + np.pi / 4.0)
+        Sy_pi_4 = np.sin(e[2] / 2.0 + np.pi / 4.0)
+        q = np.array(
+            [
+                -a * Cy_pi_4 - b * Sy_pi_4,
+                -c * Cy_pi_4 + d * Sy_pi_4,
+                c * Sy_pi_4 + d * Cy_pi_4,
+                a * Sy_pi_4 - b * Cy_pi_4,
+            ],
+            dtype=np.double,
+        )
     return q
 
 
@@ -172,8 +202,9 @@ def rot_z(psi: float) -> np.ndarray:
 # * ============================================================================================== *#
 # === DCM2EULER ===
 @njit(cache=True, fastmath=True)
-def dcm2euler(C: np.ndarray) -> np.ndarray:
+def dcm2euler(C: np.ndarray, frame: str = "ned") -> np.ndarray:
     """Converts 'ZYX' DCM matrix into corresponding euler angles (roll-pitch-yaw)
+       takes body-to-nav frame DCM
 
     Parameters
     ----------
@@ -185,14 +216,24 @@ def dcm2euler(C: np.ndarray) -> np.ndarray:
     np.ndarray
         3x1 euler angles roll, pitch, yaw [rad]
     """
-    e = np.array(
-        [
-            np.arctan2(C[1, 2], C[2, 2]),
-            np.arcsin(-C[0, 2]),
-            np.arctan2(C[0, 1], C[0, 0]),
-        ],
-        dtype=np.double,
-    )
+    if frame.casefold() == "ned":
+        e = np.array(
+            [
+                np.arctan2(C[2, 1], C[2, 2]),
+                -np.arcsin(C[2, 0]),
+                np.arctan2(C[1, 0], C[0, 0]),
+            ],
+            dtype=np.double,
+        )
+    elif frame.casefold() == "enu":
+        e = np.array(
+            [
+                np.arctan2(-C[2, 1], -C[2, 2]),
+                np.arcsin(C[2, 0]),
+                np.arctan2(C[0, 0], C[1, 0]),
+            ],
+            dtype=np.double,
+        )
     return e
 
 
@@ -211,7 +252,7 @@ def dcm2quat(C: np.ndarray) -> np.ndarray:
     np.ndarray
         4x1 quaternion
     """
-    # q = euler2quat(dcm2euler(C))
+    # Groves 2.35/36
     q_w = 0.5 * np.sqrt(1 + np.trace(C))
     if q_w > 0.01:
         q_w_4 = 4 * q_w
@@ -231,7 +272,7 @@ def dcm2quat(C: np.ndarray) -> np.ndarray:
 # * ============================================================================================== *#
 # === QUAT2EULER ===
 @njit(cache=True, fastmath=True)
-def quat2euler(q: np.ndarray) -> np.ndarray:
+def quat2euler(q: np.ndarray, frame: str = "ned") -> np.ndarray:
     """Converts quaternion to corresponding euler angles (roll-pitch-yaw)
 
     Parameters
@@ -244,22 +285,36 @@ def quat2euler(q: np.ndarray) -> np.ndarray:
     np.ndarray
         3x1 RPY euler angles [radians]
     """
+    # Groves 2.37
     w, x, y, z = q
-    e = np.array(
-        [
-            np.arctan2(2 * (w * x + y * z), (w * w - x * x - y * y + z * z)),
-            np.arcsin(-2 * (-w * y + x * z)),
-            np.arctan2(2 * (w * z + x * y), (w * w + x * x - y * y - z * z)),
-        ],
-        dtype=np.double,
-    )
+    if frame.casefold() == "ned":
+        e = np.array(
+            [
+                np.arctan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y)),
+                np.arcsin(2.0 * (w * y - x * z)),
+                np.arctan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z)),
+            ],
+            dtype=np.double,
+        )
+    elif frame.casefold() == "enu":
+        e = wrapToPi(
+            np.array(
+                [
+                    np.pi + np.arctan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y)),
+                    -np.arcsin(2.0 * (w * y - x * z)),
+                    half_pi - np.arctan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z)),
+                ],
+                dtype=np.double,
+            )
+        )
     return e
 
 
 # === QUAT2DCM ===
 @njit(cache=True, fastmath=True)
 def quat2dcm(q: np.ndarray) -> np.ndarray:
-    """Converts quaternion to corresponding 'XYZ' DCM
+    """Converts quaternion to corresponding 'ZYX' DCM
+       body-to-nav DCM
 
     Parameters
     ----------
@@ -271,15 +326,25 @@ def quat2dcm(q: np.ndarray) -> np.ndarray:
     np.ndarray
         3x3 'ZYX' direction cosine matrix
     """
+    # Groves 2.34
     w, x, y, z = q
+    # fmt: off
     C = np.array(
         [
-            [w * w + x * x - y * y - z * z, 2 * (x * y - w * z), 2 * (w * y + x * z)],
-            [2 * (w * z + x * y), w * w - x * x + y * y - z * z, 2 * (y * z - w * x)],
-            [2 * (x * z - w * y), 2 * (y * z + w * x), w * w - x * x - y * y + z * z],
+            [w * w + x * x - y * y - z * z,           2 * (x * y - w * z),           2 * (w * y + x * z)],
+            [          2 * (w * z + x * y), w * w - x * x + y * y - z * z,           2 * (y * z - w * x)],
+            [          2 * (x * z - w * y),           2 * (y * z + w * x), w * w - x * x - y * y + z * z],
         ],
         dtype=np.double,
     )
+    # C = np.array(
+    #     [
+    #         [w*w + x*x - y*y - z*z,       2.0*(x*y + z*w),       2.0*(x*z - y*w)],
+    #         [      2.0*(x*y - z*w), w*w - x*x + y*y - z*z,       2.0*(y*z + x*w)],
+    #         [      2.0*(x*z + y*w),       2.0*(y*z - x*w), w*w - x*x - y*y + z*z],
+    #     ]
+    # )
+    # fmt: on
     return C
 
 
@@ -300,7 +365,8 @@ def wrapTo2Pi(v1: float) -> float:
         Nx1 vector of normalized angles [radians]
     """
 
-    return np.mod(v1, two_pi)
+    return v1 - np.floor(v1 / two_pi) * two_pi
+    # return np.mod(v1, two_pi)
 
 
 # === WRAPTO2PI ===

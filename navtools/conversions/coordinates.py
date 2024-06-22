@@ -42,6 +42,7 @@ __all__ = [
     "ecef2ned",
     "ecef2enu",
     "ecef2aer",
+    "ecef2aer2d",
     "ned2eci",
     "ned2ecef",
     "ned2lla",
@@ -745,14 +746,37 @@ def ecef2aer(ecef_t: np.ndarray, ecef_r: np.ndarray) -> np.ndarray:
         3x1 relative AER from reference to target
     """
     lla0 = ecef2lla(ecef_r)
-    enu = ecef2enu(ecef_t, lla0)
+    C_e_n = ecef2enuDcm(lla0)
+    enu = C_e_n @ (ecef_t - ecef_r)
     r = np.linalg.norm(enu)
     az = np.arctan2(enu[0], enu[1])
     el = np.arcsin(enu[2] / r)
-    return np.array([az, el, r], dtype=np.double)
+    return np.array([az, el, r])
 
 
-#   return enu2aer(ecef2enu(ecef_t, lla0), ecef2enu(ecef_r, lla0))
+@njit(cache=True, fastmath=True)
+def ecef2aer2d(ecef_t: np.ndarray, ecef_r: np.ndarray) -> np.ndarray:
+    """Converts Earth-Centered-Earth-Fixed to Azimuth-Elevation-Range coordinates
+
+    Parameters
+    ----------
+    ecef_t : np.ndarray
+        3x1 target ECEF coordinates
+    ecef_r : np.ndarray
+        3x1 reference ECEF coordinates
+
+    Returns
+    -------
+    np.ndarray
+        3x1 relative AER from reference to target
+    """
+    lla0 = ecef2lla(ecef_r)
+    C_e_n = ecef2enuDcm(lla0)
+    enu = C_e_n @ (ecef_t.T - ecef_r[:, None])
+    r = np.sqrt(enu[0, :] ** 2 + enu[1, :] ** 2 + enu[2, :] ** 2)
+    az = np.arctan2(enu[0, :], enu[1, :])
+    el = np.arcsin(enu[2, :] / r)
+    return np.vstack((az, el, r))
 
 
 # --------------------------------------------------------------------------------------------------#
