@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit, generated_jit, types
+from numba import njit, types
 from numpy.typing import ArrayLike
 
 from navtools.conversions import ecef2lla, ecef2enu
