@@ -49,7 +49,7 @@ Python **3.10 or greater** is required.
 1. Clone ***navtools.py***.
 
 ```shell
-git clone https://github.com/tannerkoza/navtools.py.git
+git clone https://github.com/navsquad/navtools.git
 ```
 
 2. Install in a virtual environment or base Python (not recommended) using `pip`.
@@ -57,7 +57,7 @@ git clone https://github.com/tannerkoza/navtools.py.git
 pip install navtools.py/
 ```
 
-It's that simple! If you find yourself having trouble, please submit an [issue](https://github.com/tannerkoza/navtools.py/issues/new).
+It's that simple! If you find yourself having trouble, please submit an [issue](https://github.com/navsquad/navtools.py/issues/new).
 
 ## 🎈 Usage <a name="usage"></a>
 
